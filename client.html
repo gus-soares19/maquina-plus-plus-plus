@@ -4,8 +4,6 @@
 <head>
     <meta charset="UTF-8">
     <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
-    <script src="script.js"></script>
-    <link rel="stylesheet" href="style.css">
     <title>M+++</title>
     <style>
         #titulo {
@@ -26,6 +24,7 @@
             font-size: 20px;
             color: black;
         }
+
         a:hover {
             font-weight: bold;
         }
@@ -75,7 +74,7 @@
 <body>
     <div id="titulo">
         <h1>Escreva um código no assembly da M+++ para ser interpretado</h1>
-        <a href="https://github.com/jejung/maquina-plus-plus/blob/master/README.md" target="_blank">?</a>
+        <a href="https://github.com/jejung/maquina-plus-plus/blob/master/README.md" target="_blank" title="instruções M++">?</a>
     </div>
     <div id="codigo-area">
         <textarea type="text" id="codigo" name="codigo" required></textarea>
@@ -88,7 +87,7 @@
             function (e) {
                 const allowedDigits = "0123456789"
                 const allowedLetters = "ABCDEFGHIJKLMNOPQRSTUVXWYZ"
-                const allowedChars = ";,"
+                const allowedChars = ";,:"
 
                 if (!allowedDigits.includes(e.key) && !allowedLetters.includes(e.key.toUpperCase()) && !allowedChars.includes(e.key) &&
                     (e.keyCode != 32 && e.keyCode != 13 && e.keyCode != 27)) {
@@ -98,7 +97,7 @@
         );
         function enviarCodigo() {
             const codigo = document.getElementById("codigo").value.
-                replaceAll("\n", "").replaceAll(",", "").replaceAll(";", ".").toUpperCase(); // valor do parâmetro código
+                replaceAll("\n", "_").replaceAll(",", "-").replaceAll(";", ".").replaceAll(":", "*").toUpperCase(); // valor do parâmetro código
             const url = "http://localhost:8080"; // URL do servidor web
 
             fetch(url, {
