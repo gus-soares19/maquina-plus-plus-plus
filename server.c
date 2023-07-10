@@ -4,8 +4,22 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include "analyzer.c" 
 
 #define PORT 8080
+
+char *createHttpResponseText(HttpResponse* httpResponse){
+    char* response = (char*)malloc(1024 * sizeof(char));
+
+    sprintf(response, "HTTP/1.1 %d %s\r\n"
+                                  "Content-Type: text/plain\r\n"
+                                  "Access-Control-Allow-Origin: *\r\n"
+                                  "Access-Control-Allow-Methods: GET, POST\r\n"
+                                  "Access-Control-Allow-Headers: Content-Type\r\n"
+                                  "Conteant-Length: %ld\r\n\r\n%s", httpResponse->code, httpResponse->type, strlen(httpResponse->message), httpResponse->message);
+
+    return response;
+}
 
 char *lerArquivoHTML(const char *nomeArquivo)
 {
@@ -124,23 +138,18 @@ int main(int argc, char const *argv[])
         {
             // trata a requisição GET
             char *ptr = strstr(buffer, "codigo=");
-
             if (ptr != NULL)
             {
                 ptr += 7;                   // pula "codigo="
                 char *codigo = strdup(ptr); // aloca memória
+                HttpResponse* httpResponse = analyze(ptr);
 
-                sprintf(response, "HTTP/1.1 200 OK\r\n"
-                                  "Content-Type: text/plain\r\n"
-                                  "Access-Control-Allow-Origin: *\r\n"
-                                  "Access-Control-Allow-Methods: GET, POST\r\n"
-                                  "Access-Control-Allow-Headers: Content-Type\r\n"
-                                  "Content-Length: %ld\r\n\r\n%s",
-                        strlen(codigo), codigo);
-
+                char* text = createHttpResponseText(httpResponse);
+                
                 // Envia a resposta do servidor para o cliente
-                write(new_socket, response, strlen(response));
+                write(new_socket, text, strlen(text));
                 free(codigo); // libera a memória
+                free(httpResponse);
             }
             else
             {

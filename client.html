@@ -100,16 +100,19 @@
                 replaceAll("\n", "_").replaceAll(",", "-").replaceAll(";", ".").replaceAll(":", "*").toUpperCase(); // valor do parâmetro código
             const url = "http://localhost:8080"; // URL do servidor web
 
+            console.log(codigo)
             fetch(url, {
                 method: "POST",
                 body: new URLSearchParams({ codigo }),
             }).then((response) => {
                 if (response.ok) {
                     response.text().then((text) => {
-                        console.log(`Resposta do servidor: ${text}`);
+                        alert(`Resposta do servidor: ${text}`);
                     });
                 } else {
-                    console.error(`Erro ao enviar solicitação: ${response.status}`);
+                    response.text().then((text) => {
+                        alert(`ERRO: ${text}`);
+                    });
                 }
             }).catch((error) => {
                 console.error(`Erro na solicitação: ${error}`);

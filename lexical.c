@@ -5,14 +5,14 @@
 #include <ctype.h>
 
 typedef enum {
-    TOKEN_LABEL,
-    TOKEN_INSTRUCTION,
-    TOKEN_REGISTER,
-    TOKEN_NUMBER,
-    TOKEN_SEMICOLON,
-    TOKEN_COMA,
-    TOKEN_NEWLINE,
-    TOKEN_INVALID
+    TOKEN_LABEL, // 0
+    TOKEN_INSTRUCTION, // 1
+    TOKEN_REGISTER, // 2
+    TOKEN_NUMBER, // 3
+    TOKEN_SEMICOLON, // 4
+    TOKEN_COMA, // 5
+    TOKEN_NEWLINE, // 6
+    TOKEN_INVALID // 7
 } TokenType;
 
 // Definição das estruturas de token
@@ -67,13 +67,20 @@ TokenList* lex(const char* code) {
 
     while (i < length) {
         if (isspace(code[i])) {
-            i++;
-            continue;
+            if(code[i] == '\n'){
+                char* value = (char*)malloc(2 * sizeof(char));
+                value[0] = '\n';
+                value[1] = '\0';
+                addToken(tokenList, createToken(TOKEN_NEWLINE, value, line));
+                line++;                
+        }
+        i++;
+        continue;
         }
 
         if (isalpha(code[i])) {
             int start = i;
-            while (isalnum(code[i]) || code[i] == '\n') {
+            while (isalnum(code[i])) {
                 i++;
             }
             int len = i - start;
@@ -84,10 +91,12 @@ TokenList* lex(const char* code) {
             if (code[i] == ':'){
                 addToken(tokenList, createToken(TOKEN_LABEL, value, line));
                 i++;
-            }else if(tokenList->count > 0 && tokenList->tokens[tokenList->count - 1]->type == TOKEN_INSTRUCTION &&
-                    strcmp(tokenList->tokens[tokenList->count - 1]->value, "JMP") == 0) {
+            }else if(tokenList->count > 0 && tokenList->tokens[tokenList->count - 1]->type == TOKEN_INSTRUCTION &&(
+                    strcmp(tokenList->tokens[tokenList->count - 1]->value, "JMP") == 0) || 
+                    strcmp(tokenList->tokens[tokenList->count - 1]->value, "CALL") == 0) {
                 addToken(tokenList, createToken(TOKEN_LABEL, value, line));
-            } else if (len == 1 && (code[start] == 'B' || code[start] == 'C' || code[start] == 'D' || code[start] == 'E')) {
+            } else if (len == 1 && (code[start] == 'A' || code[start] == 'B' || code[start] == 'C' || 
+                                    code[start] == 'D' || code[start] == 'E')) {
                 addToken(tokenList, createToken(TOKEN_REGISTER, value, line));
             } else if (strncmp(value, "ADD", 3) == 0 || strncmp(value, "SUB", 3) == 0 || strncmp(value, "MOV", 3) == 0 ||
                        strncmp(value, "INC", 3) == 0 || strncmp(value, "JMP", 3) == 0 || strncmp(value, "CALL", 3) == 0 ||
@@ -119,7 +128,6 @@ TokenList* lex(const char* code) {
             value[0] = ';';
             value[1] = '\0';
             addToken(tokenList, createToken(TOKEN_SEMICOLON, value, line));
-            line++;
             i++;
             continue;
         }
@@ -130,17 +138,6 @@ TokenList* lex(const char* code) {
             value[0] = ',';
             value[1] = '\0';
             addToken(tokenList, createToken(TOKEN_COMA, value, line));
-            line++;
-            i++;
-            continue;
-        }
-
-        if (code[i] == '\n') {
-            char* value = (char*)malloc(2 * sizeof(char));
-            value[0] = '\n';
-            value[1] = '\0';
-            addToken(tokenList, createToken(TOKEN_NEWLINE, value, line));
-            line++;
             i++;
             continue;
         }
@@ -154,44 +151,4 @@ TokenList* lex(const char* code) {
     }
 
     return tokenList;
-}
-
-// Função auxiliar para liberar a memória dos tokens e da lista de tokens
-void freeToken(Token* token) {
-    free(token->value);
-    free(token);
-}
-
-// Função para liberar a memória dos tokens e da lista de tokens
-void freeTokens(TokenList* tokenList) {
-    for (int i = 0; i < tokenList->count; i++) {
-        freeToken(tokenList->tokens[i]);
-    }
-    free(tokenList->tokens);
-    free(tokenList);
-}
-
-void printTokens(TokenList* tokenList) {
-    for (int i = 0; i < tokenList->count; i++) {
-        Token* token = tokenList->tokens[i];
-        printf("Token: type=%d, value='%s', line=%d\n", token->type, token->value, token->line);
-    }
-}
-
-// Exemplo de uso
-int lexical(char* code) {
-    str_replace(code, '+', ' ');
-    str_replace(code, '_', '\n');
-    str_replace(code, '-', ',');
-    str_replace(code, '.', ';');
-    str_replace(code, '*', ':');
-
-    TokenList* tokenList = lex(code);
-
-    if (tokenList != NULL) {
-        printTokens(tokenList);
-        freeTokens(tokenList);
-    }
-    
-    return 0;
 }
