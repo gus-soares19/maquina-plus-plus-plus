@@ -6,13 +6,14 @@
 
 typedef enum {
     TOKEN_LABEL, // 0
-    TOKEN_INSTRUCTION, // 1
-    TOKEN_REGISTER, // 2
-    TOKEN_NUMBER, // 3
-    TOKEN_SEMICOLON, // 4
-    TOKEN_COMA, // 5
-    TOKEN_NEWLINE, // 6
-    TOKEN_INVALID // 7
+    TOKEN_IDENTIFIER, // 1
+    TOKEN_INSTRUCTION, // 2
+    TOKEN_REGISTER, // 3
+    TOKEN_NUMBER, // 4
+    TOKEN_SEMICOLON, // 5
+    TOKEN_COMA, // 6
+    TOKEN_NEWLINE, // 7
+    TOKEN_INVALID // 8
 } TokenType;
 
 // Definição das estruturas de token
@@ -56,7 +57,7 @@ void str_replace(char* str, char find, char replace) {
 }
 
 // Função para realizar a análise léxica
-TokenList* lex(const char* code) {
+TokenList* tokenize(const char* code) {
     TokenList* tokenList = (TokenList*)malloc(sizeof(TokenList));
     tokenList->tokens = NULL;
     tokenList->count = 0;
@@ -88,27 +89,30 @@ TokenList* lex(const char* code) {
             strncpy(value, &code[start], len);
             value[len] = '\0';
 
+            // verificar label
             if (code[i] == ':'){
                 addToken(tokenList, createToken(TOKEN_LABEL, value, line));
                 i++;
-            }else if(tokenList->count > 0 && tokenList->tokens[tokenList->count - 1]->type == TOKEN_INSTRUCTION &&(
-                    strcmp(tokenList->tokens[tokenList->count - 1]->value, "JMP") == 0) || 
-                    strcmp(tokenList->tokens[tokenList->count - 1]->value, "CALL") == 0) {
-                addToken(tokenList, createToken(TOKEN_LABEL, value, line));
-            } else if (len == 1 && (code[start] == 'A' || code[start] == 'B' || code[start] == 'C' || 
+            }
+            // verificar registrador valido 
+            else if (len == 1 && (code[start] == 'A' || code[start] == 'B' || code[start] == 'C' || 
                                     code[start] == 'D' || code[start] == 'E')) {
                 addToken(tokenList, createToken(TOKEN_REGISTER, value, line));
-            } else if (strncmp(value, "ADD", 3) == 0 || strncmp(value, "SUB", 3) == 0 || strncmp(value, "MOV", 3) == 0 ||
+            } 
+            // verificar instrucao valida
+            else if (strncmp(value, "ADD", 3) == 0 || strncmp(value, "SUB", 3) == 0 || strncmp(value, "MOV", 3) == 0 ||
                        strncmp(value, "INC", 3) == 0 || strncmp(value, "JMP", 3) == 0 || strncmp(value, "CALL", 3) == 0 ||
                        strncmp(value, "RET", 3) == 0 || strncmp(value, "PUSH", 4) == 0 || strncmp(value, "POP", 3) == 0){
                 addToken(tokenList, createToken(TOKEN_INSTRUCTION, value, line));
-            }else{
-                addToken(tokenList, createToken(TOKEN_INVALID, value, line));
+            }
+            // identificador
+            else{
+                addToken(tokenList, createToken(TOKEN_IDENTIFIER, value, line));
             }
             continue;
         }
 
-        // Verificar número
+        // verificar número
         if (isdigit(code[i])) {
             int start = i;
             while (isdigit(code[i])) {
@@ -122,7 +126,7 @@ TokenList* lex(const char* code) {
             continue;
         }
 
-        // Verificar ponto e virgula
+        // verificar ponto e virgula
         if (code[i] == ';') {
             char* value = (char*)malloc(2 * sizeof(char));
             value[0] = ';';
@@ -132,7 +136,7 @@ TokenList* lex(const char* code) {
             continue;
         }
 
-        // Verificar virgula
+        // verificar virgula
         if (code[i] == ',') {
             char* value = (char*)malloc(2 * sizeof(char));
             value[0] = ',';
@@ -142,7 +146,7 @@ TokenList* lex(const char* code) {
             continue;
         }
 
-        // Se chegou até aqui, trata-se de um caractere inválido
+        // caractere inválido
         char* value = (char*)malloc(2 * sizeof(char));
         value[0] = code[i];
         value[1] = '\0';

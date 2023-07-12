@@ -1,5 +1,7 @@
-#include "lexical.c"
+#include "tokenizer.c"
+#include "parser.c"
 #include <string.h>
+#include <stdbool.h>
 
 typedef struct {
     char *message;
@@ -24,7 +26,7 @@ HttpResponse* analyze(char* code) {
     str_replace(code, '.', ';');
     str_replace(code, '*', ':');
 
-    TokenList* tokenList = lex(code);
+    TokenList* tokenList = tokenize(code);
     char* message = (char*)malloc(1024 * sizeof(char));
 
     if (tokenList == NULL) {        
@@ -33,10 +35,16 @@ HttpResponse* analyze(char* code) {
 
     for (int i = 0; i < tokenList->count; i++) {
         Token* token = tokenList->tokens[i];
-        if(token->type == 7){
+        if(token->type == 8){
             sprintf(message, "Token '%s' nao identificado encontrado na linha %d", token->value, token->line);
             return createHttpResponse(message, 400, "Bad Request");
         }
+    }
+
+    ParserResponse* parserResponse = parse(tokenList);
+    if(!(parserResponse->passed)){
+        sprintf(message, parserResponse->message);
+        return createHttpResponse(message, 400, "Bad Request");
     }
 
     return createHttpResponse("OK", 200, "OK");
