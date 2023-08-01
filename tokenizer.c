@@ -1,28 +1,38 @@
 #include <stdbool.h>
 #include <string.h>
 
-typedef struct {
+typedef struct
+{
     int position;
-    char* input;
+    char *input;
     char *tokenizerError;
 } Tokenizer;
 
-void initializeTokenizer(Tokenizer* tokenizer)
+void initializeTokenizer(Tokenizer *tokenizer)
 {
-    tokenizer = (Tokenizer*)malloc(sizeof(Tokenizer));
     tokenizer->position = 0;
-    tokenizer->input = malloc(1024 * sizeof(char));
-    tokenizer->tokenizerError = malloc(1024 * sizeof(char));
+    tokenizer->input = (char *)malloc(1024 * sizeof(char));
+    tokenizer->tokenizerError = (char *)malloc(256 * sizeof(char));
+
+    strcpy(tokenizer->input, "");
+    strcpy(tokenizer->tokenizerError, "");
 }
 
-void setPosition(Tokenizer* tokenizer, int pos)
+void freeTokenizer(Tokenizer *tokenizer)
+{
+    free(tokenizer->input);
+    free(tokenizer->tokenizerError);
+    tokenizer = NULL;
+}
+
+void setPosition(Tokenizer *tokenizer, int pos)
 {
     tokenizer->position = pos;
 }
 
-void setInput(Tokenizer* tokenizer, char* input)
+void setInput(Tokenizer *tokenizer, char *input)
 {
-    tokenizer->input = input;
+    strcpy(tokenizer->input, input);
     setPosition(tokenizer, 0);
 }
 
@@ -42,7 +52,7 @@ int getTokenForState(int state)
     return TOKEN_STATE[state];
 }
 
-int lookupToken(int base, const char* key)
+int lookupToken(int base, const char *key)
 {
     int start = SPECIAL_CASES_INDEXES[base];
     int end = SPECIAL_CASES_INDEXES[base + 1] - 1;
@@ -69,21 +79,12 @@ int lookupToken(int base, const char* key)
     return base;
 }
 
-Token* createToken(int tokenType, char* lexeme, int startPosition)
-{
-    Token* token =(Token*)malloc(sizeof(Token));
-    token->type = tokenType;
-    token->lexeme = lexeme;
-    token->position = startPosition;
-    return token;
-}
-
-bool hasInput(Tokenizer* tokenizer)
+bool hasInput(Tokenizer *tokenizer)
 {
     return tokenizer->position < strlen(tokenizer->input);
 }
 
-char getNextChar(Tokenizer* tokenizer)
+char getNextChar(Tokenizer *tokenizer)
 {
     if (hasInput(tokenizer))
     {
@@ -91,15 +92,16 @@ char getNextChar(Tokenizer* tokenizer)
     }
     else
     {
-        return (char) -1;
+        return (char)-1;
     }
 }
 
-char* substring(const char* str, int start, int end) 
-{    
+char *substring(const char *str, int start, int end)
+{
     int substringLength = end - start;
-    char* result = (char*)malloc((substringLength + 1) * sizeof(char));
-    if (result == NULL) {
+    char *result = (char *)malloc((substringLength + 1) * sizeof(char));
+    if (result == NULL)
+    {
         return NULL;
     }
 
@@ -109,7 +111,7 @@ char* substring(const char* str, int start, int end)
     return result;
 }
 
-Token* getNextToken(Tokenizer* tokenizer)
+Token *getNextToken(Tokenizer *tokenizer)
 {
     if (!hasInput(tokenizer))
     {
@@ -144,8 +146,9 @@ Token* getNextToken(Tokenizer* tokenizer)
 
     if (endState < 0 || (endState != state && getTokenForState(lastState) == -2))
     {
-        tokenizer->tokenizerError = SCANNER_ERROR[lastState];
-    } 
+        strcpy(tokenizer->tokenizerError, SCANNER_ERROR[lastState]);
+        return NULL;
+    }
 
     tokenizer->position = end;
     int token = getTokenForState(endState);
@@ -153,10 +156,10 @@ Token* getNextToken(Tokenizer* tokenizer)
     if (token == 0)
     {
         return getNextToken(tokenizer);
-    } 
+    }
     else
     {
-        char* lexeme = substring(tokenizer->input, start, end);
+        char *lexeme = substring(tokenizer->input, start, end);
         token = lookupToken(token, lexeme);
         return createToken(token, lexeme, start);
     }

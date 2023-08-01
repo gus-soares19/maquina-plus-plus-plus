@@ -74,7 +74,8 @@
 <body>
     <div id="titulo">
         <h1>Escreva um código no assembly da M+++ para ser interpretado</h1>
-        <a href="https://github.com/jejung/maquina-plus-plus/blob/master/README.md" target="_blank" title="instruções M++">?</a>
+        <a href="https://github.com/jejung/maquina-plus-plus/blob/master/README.md" target="_blank"
+            title="instruções M++">?</a>
     </div>
     <div id="codigo-area">
         <textarea type="text" id="codigo" name="codigo" required></textarea>
@@ -107,7 +108,7 @@
             }).then((response) => {
                 if (response.ok) {
                     response.text().then((text) => {
-                        alert(`Resposta do servidor: ${text}`);
+                        alert(`${text}`);
                     });
                 } else {
                     response.text().then((text) => {

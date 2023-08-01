@@ -4,22 +4,10 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include "httpResponse.c"
 #include "parser.c"
 
 #define PORT 8080
-
-// char *createHttpResponseText(HttpResponse* httpResponse){
-//     char* response = (char*)malloc(1024 * sizeof(char));
-
-//     sprintf(response, "HTTP/1.1 %d %s\r\n"
-//                                   "Content-Type: text/plain\r\n"
-//                                   "Access-Control-Allow-Origin: *\r\n"
-//                                   "Access-Control-Allow-Methods: GET, POST\r\n"
-//                                   "Access-Control-Allow-Headers: Content-Type\r\n"
-//                                   "Conteant-Length: %ld\r\n\r\n%s", httpResponse->code, httpResponse->type, strlen(httpResponse->message), httpResponse->message);
-
-//     return response;
-// }
 
 char *lerArquivoHTML(const char *nomeArquivo)
 {
@@ -68,8 +56,8 @@ int main(int argc, char const *argv[])
     struct sockaddr_in address;
     int opt = 1;
     int addrlen = sizeof(address);
-    char buffer[1024] = {0};
-    char response[1024] = {0};
+    char buffer[2048] = {0};
+    char response[2048] = {0};
     const char *nomeArquivo = "client.html";
 
     // Cria um descritor do socket
@@ -140,21 +128,18 @@ int main(int argc, char const *argv[])
             char *code = strstr(buffer, "codigo=");
             if (code != NULL)
             {
-                code += 7;                   // pula "codigo="
-                Parser* parser = (Parser*)malloc(sizeof(Parser));
+                code += 7; // pula "codigo="
+                Parser *parser = (Parser *)malloc(sizeof(Parser));
                 initializeParser(parser);
-                parse(parser, code);
+                HttpResponse *httpResponse = parse(parser, code);
 
-                sprintf(response, "%s%s", "HTTP/1.1 200 OK\r\n"
-                                          "Content-Type: text/html; charset=utf-8\r\n"
-                                          "\r\n",
-                        code);
-                // HttpResponse* httpResponse = analyze(ptr);
+                char *text = httpResponseToText(httpResponse);
 
-                // char* text = createHttpResponseText(httpResponse);
-                
-                // // Envia a resposta do servidor para o cliente
-                write(new_socket, response, strlen(response));
+                // Envia a resposta do servidor para o cliente
+                write(new_socket, text, strlen(text));
+                free(text);
+                freeHttpResponse(httpResponse);
+                freeParser(parser);
             }
             else
             {

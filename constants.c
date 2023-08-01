@@ -2,8 +2,8 @@
 #include "parserConstants.c"
 #include "contextualizerConstants.c"
 
-int EPSILON  = 0;
-int DOLLAR   = 1;
+int EPSILON = 0;
+int DOLLAR = 1;
 
 int t_TOKEN_2 = 2; //"A"
 int t_TOKEN_3 = 3; //"B"
