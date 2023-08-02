@@ -67,12 +67,14 @@ List *getList(HashMapList *hashMapList, const char *key)
     for (int i = 0; i < 100; i++)
     {
         List *list = hashMapList->list[i];
-        if (list->key != NULL && strcmp(list->key, key) == 0)
+        if (list != NULL)
         {
-            return list;
+            if (list->key != NULL && strcmp(list->key, key) == 0)
+            {
+                return list;
+            }
         }
     }
-
     return NULL;
 }
 
@@ -81,6 +83,8 @@ void insertValue(HashMapList *hashMapList, char *key, int value)
     if (hashMapList->top == -1 || getList(hashMapList, key) == NULL)
     {
         List *newList = hashMapList->list[hashMapList->top++];
+        newList = (List *)malloc(sizeof(List));
+
         newList->key = (char *)malloc(128 * sizeof(char));
         strcpy(newList->key, key);
         newList->values = NULL;
@@ -106,26 +110,6 @@ void insertValue(HashMapList *hashMapList, char *key, int value)
         }
     }
 }
-
-// void insertValue(HashMapList* hashMapList, char* key, int value) {
-//     List* list = hashMapList->list[hashMapList->top++];
-
-//     // Verifica se a chave já existe na tabela
-//     if (list->key != NULL && strcmp(list->key, key) != 0) {
-//         strcpy(list->key, key);
-//         list->values = NULL;
-//     }
-//     else
-//     {
-//         list->key = key;
-//     }
-
-//     // Adiciona o valor à lista
-//     NodeList* newNodeList = (NodeList*)malloc(sizeof(NodeList));
-//     newNodeList->value = value;
-//     newNodeList->next = list->values;
-//     list->values = newNodeList;
-// }
 
 int getListSize(List *list)
 {

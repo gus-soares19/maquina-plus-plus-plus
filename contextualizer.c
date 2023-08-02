@@ -78,10 +78,10 @@ void executeAction(Contextualizer *contextualizer, int action, Token *token)
 
             if (bufferList != NULL)
             {
-                if (get(&contextualizer->labels, bufferList->key) != -1)
+                if (get(&(contextualizer->labels), bufferList->key) != -1)
                 {
-                    int command = get(&contextualizer->labels, bufferList->key) - 3;
-                    List *list = getList(&contextualizer->labelsBuffer, bufferList->key);
+                    int command = get(&(contextualizer->labels), bufferList->key) - 3;
+                    List *list = getList(&(contextualizer->labelsBuffer), bufferList->key);
 
                     if (list != NULL)
                     {
@@ -97,7 +97,7 @@ void executeAction(Contextualizer *contextualizer, int action, Token *token)
                 else
                 {
                     strcpy(error, "");
-                    sprintf(error, "%s%s", "Label does not exist: ", bufferList->key);
+                    sprintf(error, "%s%s", "Label nao existe: ", bufferList->key);
                     strcpy(contextualizer->contextualizerError, error);
                 }
             }
@@ -280,7 +280,7 @@ void executeAction(Contextualizer *contextualizer, int action, Token *token)
 
     case LABEL_TRANSLATE:
         toUpperCase(token->lexeme);
-        insertValue(&contextualizer->labelsBuffer, token->lexeme, contextualizer->stackIndex + 1);
+        insertValue(&(contextualizer->labelsBuffer), token->lexeme, contextualizer->stackIndex + 1);
         contextualizer->stackIndex = contextualizer->stackIndex + 2;
         resize(&contextualizer->stack, contextualizer->stackIndex + 1);
         break;
@@ -289,14 +289,14 @@ void executeAction(Contextualizer *contextualizer, int action, Token *token)
         toUpperCase(token->lexeme);
         char *label = substring(token->lexeme, 0, strlen(token->lexeme) - 1);
 
-        if (get(&contextualizer->labels, label) == -1)
+        if (get(&(contextualizer->labels), label) == -1)
         {
-            put(&contextualizer->labels, label, contextualizer->stackIndex + 2);
+            put(&(contextualizer->labels), label, contextualizer->stackIndex + 2);
         }
         else
         {
             strcpy(error, "");
-            sprintf(error, "%s%s", "Duplicated label: ", label);
+            sprintf(error, "%s%s", "Label duplicada: ", label);
             strcpy(contextualizer->contextualizerError, error);
         }
         free(label);

@@ -10,8 +10,8 @@ Token *createToken(int tokenType, char *lexeme, int startPosition)
     Token *token = (Token *)malloc(sizeof(Token));
     token->lexeme = (char *)malloc(128 * sizeof(char));
 
-    token->type = tokenType;
     strcpy(token->lexeme, lexeme);
+    token->type = tokenType;
     token->position = startPosition;
     return token;
 }
