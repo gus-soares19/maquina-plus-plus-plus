@@ -91,33 +91,51 @@
                 const allowedChars = ";,:"
 
                 if (!allowedDigits.includes(e.key) && !allowedLetters.includes(e.key.toUpperCase()) && !allowedChars.includes(e.key) &&
-                    (e.keyCode != 32 && e.keyCode != 13 && e.keyCode != 27)) {
+                    (e.keyCode != 32 && e.keyCode != 13 && e.keyCode != 10)) {
                     e.preventDefault();
                 }
             }
         );
+        function validarCodigo() {
+            const allowedDigits = "0123456789"
+            const allowedLetters = "ABCDEFGHIJKLMNOPQRSTUVXWYZ"
+            const allowedChars = ";,:"
+
+            const codigo = document.getElementById("codigo").value
+
+            for (let i = 0; i < codigo.length; i++) {
+                if (!allowedDigits.includes(codigo[i]) && !allowedLetters.includes(codigo[i].toUpperCase()) && !allowedChars.includes(codigo[i]) &&
+                    codigo.charCodeAt(i) != 32 && codigo.charCodeAt(i) != 13 && codigo.charCodeAt(i) != 10) {
+                    alert(`Caractere invalido encontrado: ${codigo[i]}`)
+                    return false;
+                }
+            }
+
+            return true;
+        }
         function enviarCodigo() {
             const codigo = document.getElementById("codigo").value.
                 replaceAll("\n", "_").replaceAll(",", "-").replaceAll(";", ".").replaceAll(":", "*").toUpperCase(); // valor do parâmetro código
             const url = "http://localhost:8080"; // URL do servidor web
 
-            console.log(codigo)
-            fetch(url, {
-                method: "POST",
-                body: new URLSearchParams({ codigo }),
-            }).then((response) => {
-                if (response.ok) {
-                    response.text().then((text) => {
-                        alert(`${text}`);
-                    });
-                } else {
-                    response.text().then((text) => {
-                        alert(`ERRO: ${text}`);
-                    });
-                }
-            }).catch((error) => {
-                console.error(`Erro na solicitação: ${error}`);
-            });
+            if (validarCodigo()) {
+                fetch(url, {
+                    method: "POST",
+                    body: new URLSearchParams({ codigo }),
+                }).then((response) => {
+                    if (response.ok) {
+                        response.text().then((text) => {
+                            alert(`${text}`);
+                        });
+                    } else {
+                        response.text().then((text) => {
+                            alert(`ERRO: ${text}`);
+                        });
+                    }
+                }).catch((error) => {
+                    console.error(`Erro na solicitação: ${error}`);
+                });
+            }
         }
     </script>
 </body>
