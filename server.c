@@ -98,59 +98,63 @@ int main(int argc, char const *argv[])
         }
         valread = read(new_socket, buffer, 1024);
 
-        // verifica se a requisição é do tipo GET
-        if (strncmp(buffer, "GET", 3) == 0)
+        if (valread > 0)
         {
-            // trata a requisição GET
-            char *conteudo = lerArquivoHTML(nomeArquivo);
 
-            if (conteudo != NULL)
+            // verifica se a requisição é do tipo GET
+            if (strncmp(buffer, "GET", 3) == 0)
             {
-                sprintf(response, "%s%s", "HTTP/1.1 200 OK\r\n"
-                                          "Content-Type: text/html; charset=utf-8\r\n"
-                                          "\r\n",
-                        conteudo);
+                // trata a requisição GET
+                char *conteudo = lerArquivoHTML(nomeArquivo);
 
-                // Envia a resposta do servidor para o cliente
-                send(new_socket, response, strlen(response), 0);
-                free(conteudo);
+                if (conteudo != NULL)
+                {
+                    sprintf(response, "%s%s", "HTTP/1.1 200 OK\r\n"
+                                              "Content-Type: text/html; charset=utf-8\r\n"
+                                              "\r\n",
+                            conteudo);
+
+                    // Envia a resposta do servidor para o cliente
+                    send(new_socket, response, strlen(response), 0);
+                    free(conteudo);
+                }
+                else
+                {
+                    // requisição inválida
+                    write(new_socket, "HTTP/1.1 404 Not Found\n\n", 25);
+                }
             }
-            else
+            // verifica se a requisição é do tipo POST
+            else if (strncmp(buffer, "POST", 4) == 0)
             {
-                // requisição inválida
-                write(new_socket, "HTTP/1.1 404 Not Found\n\n", 25);
-            }
-        }
-        // verifica se a requisição é do tipo POST
-        else if (strncmp(buffer, "POST", 4) == 0)
-        {
-            // trata a requisição GET
-            char *code = strstr(buffer, "codigo=");
-            if (code != NULL)
-            {
-                code += 7; // pula "codigo="
-                Parser *parser = (Parser *)malloc(sizeof(Parser));
-                initializeParser(parser);
-                HttpResponse *httpResponse = parse(parser, code);
+                // trata a requisição GET
+                char *code = strstr(buffer, "codigo=");
+                if (code != NULL)
+                {
+                    code += 7; // pula "codigo="
+                    Parser *parser = (Parser *)malloc(sizeof(Parser));
+                    initializeParser(parser);
+                    HttpResponse *httpResponse = parse(parser, code);
 
-                char *text = httpResponseToText(httpResponse);
+                    char *text = httpResponseToText(httpResponse);
 
-                // Envia a resposta do servidor para o cliente
-                write(new_socket, text, strlen(text));
-                free(text);
-                freeHttpResponse(httpResponse);
-                freeParser(parser);
+                    // Envia a resposta do servidor para o cliente
+                    write(new_socket, text, strlen(text));
+                    free(text);
+                    freeHttpResponse(httpResponse);
+                    freeParser(parser);
+                }
+                else
+                {
+                    // requisição inválida
+                    write(new_socket, "HTTP/1.1 400 Bad Request\n\n", 25);
+                }
             }
             else
             {
                 // requisição inválida
                 write(new_socket, "HTTP/1.1 400 Bad Request\n\n", 25);
             }
-        }
-        else
-        {
-            // requisição inválida
-            write(new_socket, "HTTP/1.1 400 Bad Request\n\n", 25);
         }
 
         memset(buffer, 0, sizeof(buffer));

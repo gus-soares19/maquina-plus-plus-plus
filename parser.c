@@ -35,8 +35,6 @@ bool pushProduction(Parser *parser, int topStack, int tokenInput)
         int production[size];
         memcpy(production, PRODUCTIONS[p], size);
 
-        int productionSize = sizeof(production) / sizeof(production[0]);
-
         for (int i = 7; i >= 0; i--)
         {
             if (production[i] != 0 || i == 0)
@@ -91,6 +89,7 @@ bool step(Parser *parser)
         else
         {
             strcpy(parser->parserError, PARSER_ERROR[x]);
+            return true;
         }
     }
     else if (isNonTerminal(x))
@@ -102,6 +101,7 @@ bool step(Parser *parser)
         else
         {
             strcpy(parser->parserError, PARSER_ERROR[x]);
+            return true;
         }
     }
     else

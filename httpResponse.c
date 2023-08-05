@@ -35,7 +35,7 @@ char *httpResponseToText(HttpResponse *httpResponse)
                       "Access-Control-Allow-Origin: *\r\n"
                       "Access-Control-Allow-Methods: GET, POST\r\n"
                       "Access-Control-Allow-Headers: Content-Type\r\n"
-                      "Conteant-Length: %ld\r\n\r\n%s",
+                      "Content-Length: %d\r\n\r\n%s",
             httpResponse->code, httpResponse->type, strlen(httpResponse->message), httpResponse->message);
 
     return response;

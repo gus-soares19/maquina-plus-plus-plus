@@ -36,7 +36,7 @@ void setInput(Tokenizer *tokenizer, char *input)
     setPosition(tokenizer, 0);
 }
 
-int getNextState(char c, int state)
+int getNextState(unsigned char c, int state)
 {
     int next = SCANNER_TABLE[state][c];
     return next;
