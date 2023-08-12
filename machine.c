@@ -1,186 +1,219 @@
+#include "memory.c"
 #include <string.h>
+#include <stdlib.h>
+#define REGS_SIZE 5
+#define CALL_STACK_SIZE 4
+#define A_ASCII 65
+
+typedef struct LabelNode
+{
+    char* label;
+    int memPos;
+    struct LabelNode* next;
+} LabelNode;
 
 typedef struct
 {
-    int A;
-    int B;
-    int C;
-    int D;
-    int E;
+    Memory memory;
+    Stack callStack;
+    LabelNode* labelHead;
+    int regs[REGS_SIZE];
+    int pos;
 } Machine;
 
-add(int num, char* reg, Machine* machine)
+void initializeMachine(Machine* machine)
 {
-    if(strcmp(reg, "A") == 0) // ADD NUM, A
+    for (int i = 0; i < REGS_SIZE; i++) 
     {
-        machine->A += num;
+        machine->regs[i] = 0;
     }
-    else if(strcmp(reg, "B") == 0) // ADD NUM, B
+
+    initializeMemory(&(machine->memory));
+    initializeStack(&(machine->callStack));
+    machine->labelHead = NULL;
+    machine->pos = 0;
+}
+
+TokenNode* getLabel(Token* token, Machine* machine)
+{
+    LabelNode* labelNode = machine->labelHead;
+
+    while(labelNode != NULL)
     {
-        machine->B += num;
+        if(strncmp(labelNode->label, token->lexeme, strlen(token->lexeme)) == 0)
+        {
+            return getTokenAt(labelNode->memPos, &(machine->memory));
+        }
     }
-    else if(strcmp(reg, "C") == 0) // ADD NUM, C
+
+    return NULL;
+}
+
+void addLabel(Token* token, Machine* machine)
+{
+    LabelNode* newNode = (LabelNode*)malloc(sizeof(LabelNode));
+    newNode->label = (char*)malloc(16 * sizeof(char));
+    strcpy(newNode->label, token->lexeme);
+    newNode->memPos = machine->memory.pos;
+    newNode->next = NULL;
+
+    if(machine->labelHead == NULL)
     {
-        machine->C += num;
+        machine->labelHead = newNode;
     }
-    else if(strcmp(reg, "D") == 0) // ADD NUM, D
+    else
     {
-        machine->D += num;
-    }
-    else if(strcmp(reg, "E") == 0) // ADD NUM E
-    {
-        machine->E += num;
+        LabelNode* current = machine->labelHead;
+        while (current->next != NULL) {
+            current = current->next;
+        }
+
+        current->next = newNode;
     }
 }
 
-sub(int num, char* reg, Machine* machine)
+void addN(int num, char* reg, Machine* machine)
 {
-    if(strcmp(reg, "A") == 0) // SUB NUM, A
-    {
-        machine->A -= num;
-    }
-    else if(strcmp(reg, "B") == 0) // SUB NUM, B
-    {
-        machine->B -= num;
-    }
-    else if(strcmp(reg, "C") == 0) // SUB NUM, C
-    {
-        machine->C -= num;
-    }
-    else if(strcmp(reg, "D") == 0) // SUB NUM, D
-    {
-        machine->D -= num;
-    }
-    else if(strcmp(reg, "E") == 0) // SUB NUM, E
-    {
-        machine->E -= num;
-    }
+    int regPos = reg[0] - A_ASCII;
+    machine->regs[regPos] = machine->regs[0] + num;
 }
 
-inc(char* reg, Machine* machine)
+void addR(char* from, char* to, Machine* machine)
 {
-    if(strcmp(reg, "A") == 0) // INC A
-    {
-        machine->A++;
-    }
-    else if(strcmp(reg, "B") == 0) // INC B
-    {
-        machine->B++;
-    }
-    else if(strcmp(reg, "C") == 0) // INC C
-    {
-        machine->C++;
-    }
-    else if(strcmp(reg, "D") == 0) // INC D
-    {
-        machine->D++;
-    }
-    else if(strcmp(reg, "E") == 0) // INC E
-    {
-        machine->E++;
-    }
+    int regFromPos = from[0] - A_ASCII;
+    int regToPos = to[0] - A_ASCII;
+    machine->regs[regToPos] = machine->regs[0] + machine->regs[regFromPos];
 }
 
-mov(char* from, char* to, Machine* machine)
+void subN(int num, char* reg, Machine* machine)
 {
-    if(strcmp(from, "A") == 0) // MOV A
-    {
-        if(strcmp(to, "B") == 0) // MOV A, B
-        {
-            machine->B = machine->A;
-        }
-        else if(strcmp(to, "C") == 0) // MOV A, C
-        {
-            machine->C = machine->A;
-        }
-        else if(strcmp(to, "D") == 0) // MOV A, D
-        {
-            machine->D = machine->A;
-        }
-        else if(strcmp(to, "E") == 0) // MOV A, E
-        {
-            machine->E = machine->A;
-        }
-    }
-
-    else if(strcmp(from, "B") == 0) // MOV B
-    {
-        if(strcmp(to, "A") == 0) // MOV B, A
-        {
-            machine->A = machine->B;
-        }
-        else if(strcmp(to, "C") == 0) // MOV B, C
-        {
-            machine->C = machine->B;
-        }
-        else if(strcmp(to, "D") == 0) // MOV B, D
-        {
-            machine->D = machine->B;
-        }
-        else if(strcmp(to, "E") == 0) // MOV B, E
-        {
-            machine->E = machine->B;
-        }
-    }
-        
-    else if(strcmp(from, "C") == 0) // MOV C
-    {
-        if(strcmp(to, "A") == 0) // MOV C, A
-        {
-            machine->A = machine->C;
-        }
-        else if(strcmp(to, "B") == 0) // MOV C, B
-        {
-            machine->B = machine->C;
-        }
-        else if(strcmp(to, "D") == 0) // MOV C, D
-        {
-            machine->D = machine->C;
-        }
-        else if(strcmp(to, "E") == 0) // MOV C, E
-        {
-            machine->E = machine->C;
-        }
-    }
-
-    else if(strcmp(from, "D") == 0) // MOV D
-    {
-        if(strcmp(to, "A") == 0) // MOV D, A
-        {
-            machine->A = machine->D;
-        }
-        else if(strcmp(to, "B") == 0) // MOV D, B
-        {
-            machine->B = machine->D;
-        }
-        else if(strcmp(to, "C") == 0) // MOV D, C
-        {
-            machine->C = machine->D;
-        }
-        else if(strcmp(to, "E") == 0) // MOV D, E
-        {
-            machine->E = machine->D;
-        }
-    }
-
-    else if(strcmp(from, "E") == 0) // MOV E
-    {
-        if(strcmp(to, "A") == 0) // MOV E, A
-        {
-            machine->A = machine->E;
-        }
-        else if(strcmp(to, "B") == 0) // MOV E, B
-        {
-            machine->B = machine->E;
-        }
-        else if(strcmp(to, "C") == 0) // MOV E, C
-        {
-            machine->C = machine->E;
-        }
-        else if(strcmp(to, "D") == 0) // MOV E, D
-        {
-            machine->D = machine->E;
-        }
-    }
+    int regPos = reg[0] - A_ASCII;
+    machine->regs[regPos] = machine->regs[0] - num;
 }
 
+void subR(char* from, char* to, Machine* machine)
+{
+    int regFromPos = from[0] - A_ASCII;
+    int regToPos = to[0] - A_ASCII;
+    machine->regs[regToPos] = machine->regs[0] - machine->regs[regFromPos];
+}
+
+void inc(char* reg, Machine* machine)
+{
+    int regPos = reg[0] - A_ASCII;
+    machine->regs[regPos] = machine->regs[0] + 1;
+}
+
+void movN(int num, char* reg, Machine* machine)
+{
+    int regPos =reg[0] - A_ASCII;
+    machine->regs[regPos] = num;
+}
+
+void movR(char* from, char* to, Machine* machine)
+{
+    int regFromPos = from[0] - A_ASCII;
+    int regToPos = to[0] - A_ASCII;
+    machine->regs[regToPos] = machine->regs[regFromPos];
+}
+
+int ret(Machine* machine)
+{
+  return pop(&(machine->callStack));
+}
+
+void execute(Machine* machine)
+{
+    TokenNode* current = machine->memory.head;
+
+    while (current!= NULL) 
+    {
+        switch (current->token->type)
+        {
+            case 14: // ADD
+                current = current->next;
+                if(current->token->type == 7) // NUM
+                {
+                    int num = atoi(current->token->lexeme);
+                    current = current->next;
+                    addN(num, current->token->lexeme, machine);
+                }
+                else // REG
+                {
+                   char* from = current->token->lexeme;
+                   current = current->next;
+                   addR(from, current->token->lexeme, machine); 
+                }
+                break;
+            
+            case 20: // MOV
+                current = current->next;
+                if(current->token->type == 7) // NUM
+                {
+                    int num = atoi(current->token->lexeme);
+                    current = current->next;
+                    movN(num, current->token->lexeme, machine);
+                }
+                else // REG
+                {
+                   char* from = current->token->lexeme;
+                   current = current->next;
+                   movR(from, current->token->lexeme, machine); 
+                }
+                break;
+
+            case 21: // INC
+                current = current->next;
+                inc(current->token->lexeme, machine);
+                break;
+
+            case 15: // SUB
+                current = current->next;
+                if(current->token->type == 7) // NUM
+                {
+                    int num = atoi(current->token->lexeme);
+                    current = current->next;
+                    subN(num, current->token->lexeme, machine);
+                }
+                else // REG
+                {
+                   char* from = current->token->lexeme;
+                   current = current->next;
+                   subR(from, current->token->lexeme, machine); 
+                }
+                break;
+
+            case 22: // JMP
+                current = current->next;
+                current = getLabel(current->token, machine);
+                break;
+
+            case 25: // CALL
+                if(machine->callStack.top < 4)
+                {
+                    current = current->next;
+                    push(&(machine->callStack), current->pos);
+                    current = getLabel(current->token, machine);
+                }
+                else
+                {
+                    // stack overflow
+                    break;
+                }
+                break;
+
+            case 26: // RET
+                current = getTokenAt(pop(&(machine->callStack)) + 1, &(machine->memory));
+                break;
+            default:
+                break;
+            }
+
+            if(current == NULL)
+            {
+                break;
+            }
+
+            current = current->next;
+        }
+}

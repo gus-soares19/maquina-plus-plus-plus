@@ -3,16 +3,17 @@
 #include "constants.c"
 #include "tokenizer.c"
 #include "contextualizer.c"
+#include "machine.c"
 #include <stdbool.h>
 
-typedef struct
-{
-    Stack _stack;
-    Token *_currentToken;
-    Token *_previousToken;
-    Tokenizer _tokenizer;
-    Contextualizer _contextualizer;
-    char *parserError;
+typedef struct {
+Stack _stack;
+Token* _currentToken;
+Token* _previousToken;
+Tokenizer _tokenizer;
+Contextualizer _contextualizer;
+Machine _machine;
+char* parserError;
 } Parser;
 
 bool isTerminal(int x)
@@ -25,22 +26,22 @@ bool isNonTerminal(int x)
     return x >= FIRST_NON_TERMINAL && x < FIRST_SEMANTIC_ACTION;
 }
 
-bool pushProduction(Parser *parser, int topStack, int tokenInput)
+bool pushProduction(Parser* parser, int topStack, int tokenInput)
 {
-    int p = PARSER_TABLE[topStack - FIRST_NON_TERMINAL][tokenInput - 1];
+    int p = PARSER_TABLE[topStack-FIRST_NON_TERMINAL][tokenInput - 1];
 
-    if (p >= 0)
+    if(p >= 0)
     {
         int size = sizeof(PRODUCTIONS) / sizeof(PRODUCTIONS[p]);
         int production[size];
         memcpy(production, PRODUCTIONS[p], size);
 
-        for (int i = 7; i >= 0; i--)
+        for (int i = 7; i >= 0; i--) 
         {
-            if (production[i] != 0 || i == 0)
+            if(production[i] != 0 || i == 0)
             {
                 push(&(parser->_stack), production[i]);
-            }
+            }            
         }
         return true;
     }
@@ -50,12 +51,23 @@ bool pushProduction(Parser *parser, int topStack, int tokenInput)
     }
 }
 
-bool step(Parser *parser)
+bool isValid(Token* token)
 {
-    if (parser->_currentToken == NULL)
+    for (size_t i = 0; i < 24; i++)
+    {
+        if(token->type == MEMORY_CASES_VALUES[i]){
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool step(Parser* parser){
+    if(parser->_currentToken == NULL)
     {
         int pos = 0;
-        if (parser->_previousToken != NULL)
+        if(parser->_previousToken != NULL)
         {
             pos = parser->_previousToken->position + strlen(parser->_previousToken->lexeme);
         }
@@ -66,15 +78,15 @@ bool step(Parser *parser)
     int x = pop(&(parser->_stack));
     int a = parser->_currentToken->type;
 
-    if (x == EPSILON)
+    if(x == EPSILON)
     {
         return false;
     }
-    else if (isTerminal(x))
+    else if(isTerminal(x))
     {
-        if (x == a)
+        if(x == a)
         {
-            if (isEmpty(&(parser->_stack)))
+            if(isEmpty(&(parser->_stack)))
             {
                 return true;
             }
@@ -82,6 +94,16 @@ bool step(Parser *parser)
             {
                 parser->_previousToken = parser->_currentToken;
                 parser->_currentToken = getNextToken(&(parser->_tokenizer));
+
+                if(parser->_currentToken != NULL && isValid(parser->_currentToken))
+                {
+                    addToken(parser->_currentToken, &(parser->_machine.memory));
+
+                    if(parser->_currentToken->type == 29)
+                    {
+                        addLabel(parser->_currentToken, &(parser->_machine));
+                    }
+                }
 
                 return false;
             }
@@ -92,9 +114,9 @@ bool step(Parser *parser)
             return true;
         }
     }
-    else if (isNonTerminal(x))
+    else if(isNonTerminal(x))
     {
-        if (pushProduction(parser, x, a))
+        if(pushProduction(parser, x, a))
         {
             return false;
         }
@@ -106,15 +128,14 @@ bool step(Parser *parser)
     }
     else
     {
-        executeAction(&(parser->_contextualizer), x - FIRST_SEMANTIC_ACTION, parser->_previousToken);
+        executeAction(&(parser->_contextualizer), x-FIRST_SEMANTIC_ACTION, parser->_previousToken);
         return false;
     }
 }
 
-void replace(char *str)
+void replace(char* str) 
 {
-    if (str == NULL)
-    {
+    if (str == NULL){
         return;
     }
 
@@ -124,11 +145,11 @@ void replace(char *str)
     int length = strlen(str);
     int findSize = sizeof(find) / sizeof(find[0]);
 
-    for (int i = 0; i < length; i++)
+    for (int i = 0; i < length; i++) 
     {
-        for (int j = 0; j < findSize; j++)
+        for (int j = 0; j < findSize; j++) 
         {
-            if (str[i] == find[j])
+            if (str[i] == find[j]) 
             {
                 str[i] = replace[j];
                 break;
@@ -137,16 +158,17 @@ void replace(char *str)
     }
 }
 
-void initializeParser(Parser *parser)
+void initializeParser(Parser* parser)
 {
     initializeTokenizer(&(parser->_tokenizer));
     initializeContextualizer(&(parser->_contextualizer));
     initializeStack(&(parser->_stack));
+    initializeMachine(&(parser->_machine));
     clear(&(parser->_stack));
     push(&(parser->_stack), DOLLAR);
     push(&(parser->_stack), START_SYMBOL);
 
-    parser->parserError = (char *)malloc(1024 * sizeof(char));
+    parser->parserError = (char*)malloc(32 * sizeof(char));
 
     strcpy(parser->parserError, "");
 
@@ -154,7 +176,7 @@ void initializeParser(Parser *parser)
     parser->_previousToken = NULL;
 }
 
-void freeParser(Parser *parser)
+void freeParser(Parser* parser)
 {
     freeContextualizer(&(parser->_contextualizer));
     freeTokenizer(&(parser->_tokenizer));
@@ -166,35 +188,47 @@ void freeParser(Parser *parser)
     parser = NULL;
 }
 
-HttpResponse *parse(Parser *parser, char *code)
+HttpResponse* parse(Parser* parser, char* code)
 {
     replace(code);
     setInput(&(parser->_tokenizer), code);
 
     parser->_currentToken = getNextToken(&(parser->_tokenizer));
 
-    while (!step(parser))
+    if(parser->_currentToken != NULL && isValid(parser->_currentToken))
     {
-        if (strlen(parser->_tokenizer.tokenizerError) != 0 ||
-            strlen(parser->_contextualizer.contextualizerError) != 0 ||
-            strlen(parser->parserError) != 0)
+        addToken(parser->_currentToken, &(parser->_machine.memory));
+
+        if(parser->_currentToken->type == 29)
         {
-            break;
-        };
+            addLabel(parser->_currentToken, &(parser->_machine));
+        }
     }
 
-    if (strlen(parser->_tokenizer.tokenizerError) != 0)
+    while(!step(parser))
     {
-        return createHttpResponse(parser->_tokenizer.tokenizerError, 400, "Bad Request");
+        if(strlen(parser->_tokenizer.tokenizerError) != 0 ||
+        strlen(parser->_contextualizer.contextualizerError) != 0 ||
+        strlen(parser->parserError) != 0)
+        {
+            break;
+        }
+        ;
+    }
+
+    if(strlen(parser->_tokenizer.tokenizerError) != 0)
+    {
+        return createHttpResponse(parser->_tokenizer.tokenizerError, 400,"Bad Request");
     }
     if (strlen(parser->parserError) != 0)
     {
-        return createHttpResponse(parser->parserError, 400, "Bad Request");
+        return createHttpResponse(parser->parserError, 400,"Bad Request");
     }
     if (strlen(parser->_contextualizer.contextualizerError) != 0)
     {
-        return createHttpResponse(parser->_contextualizer.contextualizerError, 400, "Bad Request");
+        return createHttpResponse(parser->_contextualizer.contextualizerError, 400,"Bad Request");
     }
 
+    execute(&(parser->_machine));
     return createHttpResponse("Compilado com suscesso", 200, "OK");
 }
