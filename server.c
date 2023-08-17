@@ -88,6 +88,7 @@ int main(int argc, char const *argv[])
         exit(EXIT_FAILURE);
     }
 
+    printf("aguardando requisicoes na porta %d...\n", PORT);
     // aguarda por requisições
     while (1)
     {
@@ -100,7 +101,6 @@ int main(int argc, char const *argv[])
 
         if (valread > 0)
         {
-
             // verifica se a requisição é do tipo GET
             if (strncmp(buffer, "GET", 3) == 0)
             {
@@ -156,7 +156,6 @@ int main(int argc, char const *argv[])
                 write(new_socket, "HTTP/1.1 400 Bad Request\n\n", 25);
             }
         }
-
         memset(buffer, 0, sizeof(buffer));
         memset(response, 0, sizeof(response));
         close(new_socket);

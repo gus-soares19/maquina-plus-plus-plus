@@ -12,7 +12,7 @@ void initializeTokenizer(Tokenizer *tokenizer)
 {
     tokenizer->position = 0;
     tokenizer->input = (char *)malloc(1024 * sizeof(char));
-    tokenizer->tokenizerError = (char *)malloc(256 * sizeof(char));
+    tokenizer->tokenizerError = (char *)malloc(32 * sizeof(char));
 
     strcpy(tokenizer->input, "");
     strcpy(tokenizer->tokenizerError, "");

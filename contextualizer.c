@@ -21,7 +21,7 @@ void initializeContextualizer(Contextualizer *contextualizer)
     contextualizer->stackIndex = 0;
     contextualizer->generatedByte = 0;
     contextualizer->generatedByteAux = 0;
-    contextualizer->contextualizerError = (char *)malloc(1024 * sizeof(char));
+    contextualizer->contextualizerError = (char *)malloc(32 * sizeof(char));
 
     strcpy(contextualizer->contextualizerError, "");
 
@@ -53,7 +53,7 @@ void toUpperCase(char *str)
 void executeAction(Contextualizer *contextualizer, int action, Token *token)
 {
     char *value = (char *)malloc(7 * sizeof(char));
-    char *error = (char *)malloc(128 * sizeof(char));
+    char *error = (char *)malloc(32 * sizeof(char));
 
     switch (action)
     {

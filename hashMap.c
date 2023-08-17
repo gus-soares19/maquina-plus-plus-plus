@@ -42,7 +42,7 @@ void freeHashMap(HashMap *hashMap)
 void put(HashMap *hashMap, const char *key, int value)
 {
     Node *newNode = (Node *)malloc(sizeof(Node));
-    newNode->key = (char *)malloc(1024 * sizeof(char));
+    newNode->key = (char *)malloc(16 * sizeof(char));
 
     strcpy(newNode->key, key);
     newNode->value = value;

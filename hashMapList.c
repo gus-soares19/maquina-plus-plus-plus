@@ -85,7 +85,7 @@ void insertValue(HashMapList *hashMapList, char *key, int value)
         List *newList = hashMapList->list[hashMapList->top++];
         newList = (List *)malloc(sizeof(List));
 
-        newList->key = (char *)malloc(128 * sizeof(char));
+        newList->key = (char *)malloc(16 * sizeof(char));
         strcpy(newList->key, key);
         newList->values = NULL;
 
