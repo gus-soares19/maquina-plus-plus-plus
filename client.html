@@ -64,9 +64,14 @@
                             alert(`${text}`);
                         });
                     } else {
-                        response.text().then((text) => {
-                            alert(`ERRO: ${text}`);
-                        });
+                        if (response.status == 429) {
+                            alert(`ERRO 429: O servidor esta executando outra requisicao.`);
+                        }
+                        else {
+                            response.text().then((text) => {
+                                alert(`ERRO ${response.status}: ${text}`);
+                            });
+                        }
                     }
                 }).catch((error) => {
                     console.error(`Erro na solicitação: ${error}`);

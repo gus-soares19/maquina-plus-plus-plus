@@ -59,6 +59,7 @@ int main(int argc, char const *argv[])
     char buffer[2048] = {0};
     char response[2048] = {0};
     const char *nomeArquivo = "client.html";
+    bool executing = false;
 
     // Cria um descritor do socket
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
@@ -124,10 +125,17 @@ int main(int argc, char const *argv[])
                     write(new_socket, "HTTP/1.1 404 Not Found\n\n", 25);
                 }
             }
+            // apenas uma requisicao sera aceita por vez
+            else if (executing)
+            {
+                write(new_socket, "HTTP/1.1 429 Too Many Requests\n\n", 33);
+            }
             // verifica se a requisição é do tipo POST
             else if (strncmp(buffer, "POST", 4) == 0)
             {
-                // trata a requisição GET
+                executing = true;
+
+                // trata a requisição POST
                 char *code = strstr(buffer, "codigo=");
                 if (code != NULL)
                 {
@@ -143,6 +151,8 @@ int main(int argc, char const *argv[])
                     free(text);
                     freeHttpResponse(httpResponse);
                     freeParser(parser);
+
+                    executing = false;
                 }
                 else
                 {

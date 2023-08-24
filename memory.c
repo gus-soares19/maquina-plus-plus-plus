@@ -20,6 +20,21 @@ void initializeMemory(Memory *memory)
     memory->head = NULL;
 }
 
+void freeMemory(Memory *memory)
+{
+    TokenNode *current = memory->head;
+
+    while (current != NULL)
+    {
+        freeToken(current->token);
+        current = current->next;
+    }
+
+    free(memory->head);
+    memory->head = NULL;
+    memory = NULL;
+}
+
 TokenNode *getTokenAt(int pos, Memory *memory)
 {
     if (memory->head == NULL)

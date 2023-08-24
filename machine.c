@@ -39,6 +39,32 @@ void initializeMachine(Machine *machine)
     machine->flagZ = false;
 }
 
+void freeLabelNodes(LabelNode *head)
+{
+    LabelNode *current = head;
+    LabelNode *proximo = NULL;
+
+    while (current != NULL)
+    {
+        proximo = current->next;
+        free(current->label);
+        free(current);
+        current = proximo;
+    }
+
+    proximo = NULL;
+    head = NULL;
+}
+
+void freeMachine(Machine *machine)
+{
+    clear(&(machine->callStack));
+    freeLabelNodes(machine->labelHead);
+    freeMemory(&(machine->memory));
+    free(machine);
+    machine = NULL;
+}
+
 TokenNode *getLabel(Token *token, Machine *machine)
 {
     LabelNode *labelNode = machine->labelHead;
@@ -246,6 +272,7 @@ void movR(char *from, char *to, Machine *machine)
     checkFlagZ(machine);
 }
 
+// indetificar OUT (1, 2, 3) e exibir valor
 void movO(char *from, char *out, Machine *machine)
 {
     int regFromPos = from[0] - A_ASCII;
@@ -258,7 +285,7 @@ int ret(Machine *machine)
     return pop(&(machine->callStack));
 }
 
-void execute(Machine *machine)
+HttpResponse *execute(Machine *machine)
 {
     TokenNode *current = machine->memory.head;
 
@@ -433,9 +460,11 @@ void execute(Machine *machine)
 
         if (current == NULL)
         {
-            break;
+            return createHttpResponse("Execucao interrompida devido a erro inesperado", 500, "Internal Server Error");
         }
 
         current = current->next;
     }
+
+    return createHttpResponse("Execucao concluida com suscesso", 200, "OK");
 }
