@@ -18,6 +18,11 @@ bool isEmpty(Stack *stack)
     return stack->top == -1;
 }
 
+bool isFull(Stack *stack)
+{
+    return stack->top >= STACK_SIZE;
+}
+
 void push(Stack *stack, int value)
 {
     stack->top++;

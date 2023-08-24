@@ -4,7 +4,8 @@
 #define REGS_SIZE 5
 #define CALL_STACK_SIZE 4
 #define A_ASCII 65
-#define MAX_INT 65535
+#define MAX_INT 255
+#define MIN_INT 0
 
 typedef struct LabelNode
 {
@@ -17,8 +18,9 @@ typedef struct
 {
     Memory memory;
     Stack callStack;
+    Stack dataStack;
     LabelNode *labelHead;
-    int unsigned regs[REGS_SIZE];
+    int regs[REGS_SIZE];
     int pos;
     bool flagC;
     bool flagZ;
@@ -33,6 +35,7 @@ void initializeMachine(Machine *machine)
 
     initializeMemory(&(machine->memory));
     initializeStack(&(machine->callStack));
+    initializeStack(&(machine->dataStack));
     machine->labelHead = NULL;
     machine->pos = 0;
     machine->flagC = false;
@@ -59,9 +62,10 @@ void freeLabelNodes(LabelNode *head)
 void freeMachine(Machine *machine)
 {
     clear(&(machine->callStack));
+    clear(&(machine->dataStack));
     freeLabelNodes(machine->labelHead);
     freeMemory(&(machine->memory));
-    free(machine);
+
     machine = NULL;
 }
 
@@ -106,170 +110,172 @@ void addLabel(Token *token, Machine *machine)
     }
 }
 
-void checkFlagC(Machine *machine)
+void checkFlagC(Machine *machine, int value)
 {
-    int size = sizeof(machine->regs) / sizeof(machine->regs[0]);
-    bool active = false;
-
-    for (int i = 0; i < size; i++)
-    {
-        if (machine->regs[i] > MAX_INT)
-        {
-            active = true;
-            break;
-        }
-    }
-
-    machine->flagC = active;
+    machine->flagC = (value < MIN_INT || value > MAX_INT);
 }
 
-void checkFlagZ(Machine *machine)
+void checkFlagZ(Machine *machine, int value)
 {
-    int size = sizeof(machine->regs) / sizeof(machine->regs[0]);
-    bool active = false;
+    machine->flagZ = (value == MIN_INT);
+}
 
-    for (int i = 0; i < size; i++)
+int checkNumValue(int num)
+{
+    if (num > MAX_INT)
     {
-        if (machine->regs[i] == 0)
-        {
-            active = true;
-            break;
-        }
+        return num -= MAX_INT;
     }
 
-    machine->flagZ = active;
+    if (num < MIN_INT)
+    {
+        return num += MAX_INT;
+    }
 }
 
 void andN(int num, char *reg, Machine *machine)
 {
     int regPos = reg[0] - A_ASCII;
-    machine->regs[regPos] = num & machine->regs[regPos];
+    int value = num & machine->regs[regPos];
+    machine->regs[regPos] = checkNumValue(value);
 
-    checkFlagC(machine);
-    checkFlagZ(machine);
+    checkFlagC(machine, value);
+    checkFlagZ(machine, value);
 }
 
 void andR(char *from, char *to, Machine *machine)
 {
     int regFromPos = from[0] - A_ASCII;
     int regToPos = to[0] - A_ASCII;
-    machine->regs[regToPos] = machine->regs[regToPos] & machine->regs[regFromPos];
+    int value = machine->regs[regToPos] & machine->regs[regFromPos];
+    machine->regs[regToPos] = checkNumValue(value);
 
-    checkFlagC(machine);
-    checkFlagZ(machine);
+    checkFlagC(machine, value);
+    checkFlagZ(machine, value);
 }
 
 void orN(int num, char *reg, Machine *machine)
 {
     int regPos = reg[0] - A_ASCII;
-    machine->regs[regPos] = num | machine->regs[regPos];
+    int value = num | machine->regs[regPos];
+    machine->regs[regPos] = checkNumValue(value);
 
-    checkFlagC(machine);
-    checkFlagZ(machine);
+    checkFlagC(machine, value);
+    checkFlagZ(machine, value);
 }
 
 void orR(char *from, char *to, Machine *machine)
 {
     int regFromPos = from[0] - A_ASCII;
     int regToPos = to[0] - A_ASCII;
-    machine->regs[regToPos] = machine->regs[regToPos] | machine->regs[regFromPos];
+    int value = machine->regs[regToPos] | machine->regs[regFromPos];
+    machine->regs[regToPos] = checkNumValue(value);
 
-    checkFlagC(machine);
-    checkFlagZ(machine);
+    checkFlagC(machine, value);
+    checkFlagZ(machine, value);
 }
 
 void xorN(int num, char *reg, Machine *machine)
 {
     int regPos = reg[0] - A_ASCII;
-    machine->regs[regPos] = num ^ machine->regs[regPos];
+    int value = num ^ machine->regs[regPos];
+    machine->regs[regPos] = checkNumValue(value);
 
-    checkFlagC(machine);
-    checkFlagZ(machine);
+    checkFlagC(machine, value);
+    checkFlagZ(machine, value);
 }
 
 void xorR(char *from, char *to, Machine *machine)
 {
     int regFromPos = from[0] - A_ASCII;
     int regToPos = to[0] - A_ASCII;
-    machine->regs[regToPos] = machine->regs[regToPos] ^ machine->regs[regFromPos];
+    int value = machine->regs[regToPos] ^ machine->regs[regFromPos];
+    machine->regs[regToPos] = checkNumValue(value);
 
-    checkFlagC(machine);
-    checkFlagZ(machine);
+    checkFlagC(machine, value);
+    checkFlagZ(machine, value);
 }
 
 void not(char *reg, Machine *machine)
 {
     int regPos = reg[0] - A_ASCII;
-    machine->regs[regPos] = ~machine->regs[regPos];
+    int value = ~machine->regs[regPos];
+    machine->regs[regPos] = checkNumValue(value);
 
-    checkFlagC(machine);
-    checkFlagZ(machine);
+    checkFlagC(machine, value);
+    checkFlagZ(machine, value);
 }
 
 void addN(int num, char *reg, Machine *machine)
 {
     int regPos = reg[0] - A_ASCII;
-    machine->regs[regPos] = machine->regs[0] + num;
+    int value = machine->regs[0] + num;
+    machine->regs[regPos] = checkNumValue(value);
 
-    checkFlagC(machine);
-    checkFlagZ(machine);
+    checkFlagC(machine, value);
+    checkFlagZ(machine, value);
 }
 
 void addR(char *from, char *to, Machine *machine)
 {
     int regFromPos = from[0] - A_ASCII;
     int regToPos = to[0] - A_ASCII;
-    machine->regs[regToPos] = machine->regs[0] + machine->regs[regFromPos];
+    int value = machine->regs[0] + machine->regs[regFromPos];
+    machine->regs[regToPos] = checkNumValue(value);
 
-    checkFlagC(machine);
-    checkFlagZ(machine);
+    checkFlagC(machine, value);
+    checkFlagZ(machine, value);
 }
 
 void subN(int num, char *reg, Machine *machine)
 {
     int regPos = reg[0] - A_ASCII;
-    machine->regs[regPos] = machine->regs[0] - num;
+    int value = machine->regs[0] - num;
+    machine->regs[regPos] = checkNumValue(value);
 
-    checkFlagC(machine);
-    checkFlagZ(machine);
+    checkFlagC(machine, value);
+    checkFlagZ(machine, value);
 }
 
 void subR(char *from, char *to, Machine *machine)
 {
     int regFromPos = from[0] - A_ASCII;
     int regToPos = to[0] - A_ASCII;
-    machine->regs[regToPos] = machine->regs[0] - machine->regs[regFromPos];
+    int value = machine->regs[0] - machine->regs[regFromPos];
+    machine->regs[regToPos] = checkNumValue(value);
 
-    checkFlagC(machine);
-    checkFlagZ(machine);
+    checkFlagC(machine, value);
+    checkFlagZ(machine, value);
 }
 
-void inc(char *reg, Machine *machine)
+void inc(char *from, char *to, Machine *machine)
 {
-    int regPos = reg[0] - A_ASCII;
-    machine->regs[regPos] = machine->regs[0] + 1;
+    int regFromPos = from[0] - A_ASCII;
+    int regToPos = to[0] - A_ASCII;
+    int value = machine->regs[regFromPos] + (machine->regs[0] + 1);
+    machine->regs[regToPos] = checkNumValue(value);
 
-    checkFlagC(machine);
-    checkFlagZ(machine);
+    checkFlagC(machine, value);
+    checkFlagZ(machine, value);
 }
 
 void movN(int num, char *reg, Machine *machine)
 {
     int regPos = reg[0] - A_ASCII;
-    machine->regs[regPos] = num;
+    machine->regs[regPos] = checkNumValue(num);
 
-    checkFlagC(machine);
-    checkFlagZ(machine);
+    checkFlagC(machine, num);
+    checkFlagZ(machine, num);
 }
 
 void movR(char *from, char *to, Machine *machine)
 {
     int regFromPos = from[0] - A_ASCII;
     int regToPos = to[0] - A_ASCII;
-    machine->regs[regToPos] = machine->regs[regFromPos];
+    machine->regs[regToPos] = checkNumValue(machine->regs[regFromPos]);
 
-    checkFlagC(machine);
-    checkFlagZ(machine);
+    checkFlagC(machine, machine->regs[regFromPos]);
+    checkFlagZ(machine, machine->regs[regFromPos]);
 }
 
 // indetificar OUT (1, 2, 3) e exibir valor
@@ -278,11 +284,6 @@ void movO(char *from, char *out, Machine *machine)
     int regFromPos = from[0] - A_ASCII;
 
     printf("%s: %d\n", out, machine->regs[regFromPos]);
-}
-
-int ret(Machine *machine)
-{
-    return pop(&(machine->callStack));
 }
 
 HttpResponse *execute(Machine *machine)
@@ -404,7 +405,10 @@ HttpResponse *execute(Machine *machine)
 
         case 21: // INC
             current = current->next;
-            inc(current->token->lexeme, machine);
+
+            char *from = current->token->lexeme;
+            current = current->next;
+            inc(from, current->token->lexeme, machine);
             break;
 
         case 22: // JMP
@@ -418,6 +422,8 @@ HttpResponse *execute(Machine *machine)
             if (machine->flagC == true)
             {
                 current = getLabel(current->token, machine);
+                machine->flagC = false;
+                machine->flagZ = false;
             }
             break;
 
@@ -427,11 +433,13 @@ HttpResponse *execute(Machine *machine)
             if (machine->flagZ == true)
             {
                 current = getLabel(current->token, machine);
+                machine->flagC = false;
+                machine->flagZ = false;
             }
             break;
 
         case 25: // CALL
-            if (machine->callStack.top < 4)
+            if (!isFull(&(machine->callStack)))
             {
                 current = current->next;
                 push(&(machine->callStack), current->pos);
@@ -439,19 +447,43 @@ HttpResponse *execute(Machine *machine)
             }
             else
             {
-                // stack overflow
-                break;
+                return createHttpResponse("StackOverflow: Pilha de chamadas sobrecarregada", 400, "Bad Request");
             }
             break;
 
         case 26: // RET
-            current = getTokenAt(pop(&(machine->callStack)), &(machine->memory));
+            if (!isEmpty(&(machine->callStack)))
+            {
+                current = getTokenAt(pop(&(machine->callStack)), &(machine->memory));
+            }
+            else
+            {
+                return createHttpResponse("StackUnderflow: Pilha de chamadas vazia", 400, "Bad Request");
+            }
             break;
 
         case 27: // PUSH
+            if (!isFull(&(machine->dataStack)))
+            {
+                int num = atoi(current->token->lexeme);
+                push(&(machine->dataStack), num);
+            }
+            else
+            {
+                return createHttpResponse("StackOverflow: Pilha de dados sobrecarregada", 400, "Bad Request");
+            }
             break;
 
         case 28: // POP
+
+            if (!isEmpty(&(machine->dataStack)))
+            {
+                pop(&(machine->dataStack));
+            }
+            else
+            {
+                return createHttpResponse("StackUnderflow: Pilha de dados vazia", 400, "Bad Request");
+            }
             break;
 
         default:

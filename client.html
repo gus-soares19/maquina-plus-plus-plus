@@ -37,46 +37,51 @@
             const allowedLetters = "ABCDEFGHIJKLMNOPQRSTUVXWYZ"
             const allowedChars = ";,:"
 
-            const codigo = document.getElementById("codigo").value
+            let codigo = document.getElementById("codigo").value
 
+            // remove comentarios e espacos extras
+            let linhas = codigo.split("\n");
+            linhas.forEach((linha, i) => {
+                linhas[i] = linha.replace(/\/\/.*/g, '').trim();
+            });
+
+            codigo = linhas.join("\n");
+
+            // remove caracteres nao permitidos
             for (let i = 0; i < codigo.length; i++) {
                 if (!allowedDigits.includes(codigo[i]) && !allowedLetters.includes(codigo[i].toUpperCase()) && !allowedChars.includes(codigo[i]) &&
                     codigo.charCodeAt(i) != 32 && codigo.charCodeAt(i) != 13 && codigo.charCodeAt(i) != 10) {
-                    alert(`Caractere invalido encontrado: ${codigo[i]}`)
-                    return false;
+                    codigo.replace(codigo[i], "");
                 }
             }
 
-            return true;
+            return codigo.replaceAll("\n", "_").replaceAll(",", "-").replaceAll(";", ".").replaceAll(":", "*").toUpperCase();;
         }
         function enviarCodigo() {
-            const codigo = document.getElementById("codigo").value.
-                replaceAll("\n", "_").replaceAll(",", "-").replaceAll(";", ".").replaceAll(":", "*").toUpperCase(); // valor do parâmetro código
+            const codigo = validarCodigo() // valor do parâmetro código
             const url = "http://localhost:8080"; // URL do servidor web
 
-            if (validarCodigo()) {
-                fetch(url, {
-                    method: "POST",
-                    body: new URLSearchParams({ codigo }),
-                }).then((response) => {
-                    if (response.ok) {
-                        response.text().then((text) => {
-                            alert(`${text}`);
-                        });
-                    } else {
-                        if (response.status == 429) {
-                            alert(`ERRO 429: O servidor esta executando outra requisicao.`);
-                        }
-                        else {
-                            response.text().then((text) => {
-                                alert(`ERRO ${response.status}: ${text}`);
-                            });
-                        }
+            fetch(url, {
+                method: "POST",
+                body: new URLSearchParams({ codigo }),
+            }).then((response) => {
+                if (response.ok) {
+                    response.text().then((text) => {
+                        alert(`${text}`);
+                    });
+                } else {
+                    if (response.status == 429) {
+                        alert(`ERRO 429: O servidor esta executando outra requisicao.`);
                     }
-                }).catch((error) => {
-                    console.error(`Erro na solicitação: ${error}`);
-                });
-            }
+                    else {
+                        response.text().then((text) => {
+                            alert(`ERRO ${response.status}: ${text}`);
+                        });
+                    }
+                }
+            }).catch((error) => {
+                console.error(`Erro na solicitação: ${error}`);
+            });
         }
     </script>
 </body>
