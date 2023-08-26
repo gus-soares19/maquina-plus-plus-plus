@@ -2,9 +2,10 @@
 #include <string.h>
 #include <stdlib.h>
 #define REGS_SIZE 5
+#define IO_SIZE 4
 #define CALL_STACK_SIZE 4
 #define A_ASCII 65
-#define MAX_INT 255
+#define MAX_INT 256
 #define MIN_INT 0
 
 typedef struct LabelNode
@@ -21,7 +22,7 @@ typedef struct
     Stack dataStack;
     LabelNode *labelHead;
     int regs[REGS_SIZE];
-    int pos;
+    int inputs[IO_SIZE];
     bool flagC;
     bool flagZ;
 } Machine;
@@ -33,30 +34,39 @@ void initializeMachine(Machine *machine)
         machine->regs[i] = 0;
     }
 
+    for (int i = 0; i < IO_SIZE; i++)
+    {
+        machine->inputs[i] = 0;
+    }
+
     initializeMemory(&(machine->memory));
     initializeStack(&(machine->callStack));
     initializeStack(&(machine->dataStack));
     machine->labelHead = NULL;
-    machine->pos = 0;
     machine->flagC = false;
     machine->flagZ = false;
+}
+
+void setInputs(Machine *machine, char *in0, char *in1, char *in2, char *in3)
+{
+    machine->inputs[0] = strtol(in0, NULL, 16);
+    machine->inputs[1] = strtol(in1, NULL, 16);
+    machine->inputs[2] = strtol(in2, NULL, 16);
+    machine->inputs[3] = strtol(in3, NULL, 16);
 }
 
 void freeLabelNodes(LabelNode *head)
 {
     LabelNode *current = head;
-    LabelNode *proximo = NULL;
+    LabelNode *next = NULL;
 
     while (current != NULL)
     {
-        proximo = current->next;
+        next = current->next;
         free(current->label);
         free(current);
-        current = proximo;
+        current = next;
     }
-
-    proximo = NULL;
-    head = NULL;
 }
 
 void freeMachine(Machine *machine)
@@ -139,8 +149,8 @@ void andN(int num, char *reg, Machine *machine)
     int value = num & machine->regs[regPos];
     machine->regs[regPos] = checkNumValue(value);
 
-    checkFlagC(machine, value);
-    checkFlagZ(machine, value);
+    checkFlagC(machine, machine->regs[regPos]);
+    checkFlagZ(machine, machine->regs[regPos]);
 }
 
 void andR(char *from, char *to, Machine *machine)
@@ -150,8 +160,8 @@ void andR(char *from, char *to, Machine *machine)
     int value = machine->regs[regToPos] & machine->regs[regFromPos];
     machine->regs[regToPos] = checkNumValue(value);
 
-    checkFlagC(machine, value);
-    checkFlagZ(machine, value);
+    checkFlagC(machine, machine->regs[regToPos]);
+    checkFlagZ(machine, machine->regs[regToPos]);
 }
 
 void orN(int num, char *reg, Machine *machine)
@@ -160,8 +170,8 @@ void orN(int num, char *reg, Machine *machine)
     int value = num | machine->regs[regPos];
     machine->regs[regPos] = checkNumValue(value);
 
-    checkFlagC(machine, value);
-    checkFlagZ(machine, value);
+    checkFlagC(machine, machine->regs[regPos]);
+    checkFlagZ(machine, machine->regs[regPos]);
 }
 
 void orR(char *from, char *to, Machine *machine)
@@ -171,8 +181,8 @@ void orR(char *from, char *to, Machine *machine)
     int value = machine->regs[regToPos] | machine->regs[regFromPos];
     machine->regs[regToPos] = checkNumValue(value);
 
-    checkFlagC(machine, value);
-    checkFlagZ(machine, value);
+    checkFlagC(machine, machine->regs[regToPos]);
+    checkFlagZ(machine, machine->regs[regToPos]);
 }
 
 void xorN(int num, char *reg, Machine *machine)
@@ -181,8 +191,8 @@ void xorN(int num, char *reg, Machine *machine)
     int value = num ^ machine->regs[regPos];
     machine->regs[regPos] = checkNumValue(value);
 
-    checkFlagC(machine, value);
-    checkFlagZ(machine, value);
+    checkFlagC(machine, machine->regs[regPos]);
+    checkFlagZ(machine, machine->regs[regPos]);
 }
 
 void xorR(char *from, char *to, Machine *machine)
@@ -192,18 +202,28 @@ void xorR(char *from, char *to, Machine *machine)
     int value = machine->regs[regToPos] ^ machine->regs[regFromPos];
     machine->regs[regToPos] = checkNumValue(value);
 
-    checkFlagC(machine, value);
-    checkFlagZ(machine, value);
+    checkFlagC(machine, machine->regs[regToPos]);
+    checkFlagZ(machine, machine->regs[regToPos]);
 }
 
-void not(char *reg, Machine *machine)
+void notN(int num, char *reg, Machine *machine)
+{
+    int regPos = reg[0] - A_ASCII;
+    int value = ~num;
+    machine->regs[regPos] = checkNumValue(value);
+
+    checkFlagC(machine, machine->regs[regPos]);
+    checkFlagZ(machine, machine->regs[regPos]);
+}
+
+void notR(char *reg, Machine *machine)
 {
     int regPos = reg[0] - A_ASCII;
     int value = ~machine->regs[regPos];
     machine->regs[regPos] = checkNumValue(value);
 
-    checkFlagC(machine, value);
-    checkFlagZ(machine, value);
+    checkFlagC(machine, machine->regs[regPos]);
+    checkFlagZ(machine, machine->regs[regPos]);
 }
 
 void addN(int num, char *reg, Machine *machine)
@@ -278,12 +298,22 @@ void movR(char *from, char *to, Machine *machine)
     checkFlagZ(machine, machine->regs[regFromPos]);
 }
 
-// indetificar OUT (1, 2, 3) e exibir valor
+// indetificar OUT (1, 2, 3) e retornar valor
 void movO(char *from, char *out, Machine *machine)
 {
     int regFromPos = from[0] - A_ASCII;
 
-    printf("%s: %d\n", out, machine->regs[regFromPos]);
+    printf("%s: %X\n", out, machine->regs[regFromPos]);
+}
+
+// indetificar IN (1, 2, 3) e obter valor
+void movI(char *in, char *to, Machine *machine)
+{
+    int inPos;
+    sscanf(in, "IN%d", &inPos);
+    int regToPos = to[0] - A_ASCII;
+
+    machine->regs[regToPos] = machine->inputs[inPos];
 }
 
 HttpResponse *execute(Machine *machine)
@@ -298,7 +328,7 @@ HttpResponse *execute(Machine *machine)
             current = current->next;
             if (current->token->type == 7) // NUM
             {
-                int num = atoi(current->token->lexeme);
+                int num = strtol(current->token->lexeme, NULL, 16);
                 current = current->next;
                 addN(num, current->token->lexeme, machine);
             }
@@ -314,7 +344,7 @@ HttpResponse *execute(Machine *machine)
             current = current->next;
             if (current->token->type == 7) // NUM
             {
-                int num = atoi(current->token->lexeme);
+                int num = strtol(current->token->lexeme, NULL, 16);
                 current = current->next;
                 subN(num, current->token->lexeme, machine);
             }
@@ -330,7 +360,7 @@ HttpResponse *execute(Machine *machine)
             current = current->next;
             if (current->token->type == 7) // NUM
             {
-                int num = atoi(current->token->lexeme);
+                int num = strtol(current->token->lexeme, NULL, 16);
                 current = current->next;
                 andN(num, current->token->lexeme, machine);
             }
@@ -346,7 +376,7 @@ HttpResponse *execute(Machine *machine)
             current = current->next;
             if (current->token->type == 7) // NUM
             {
-                int num = atoi(current->token->lexeme);
+                int num = strtol(current->token->lexeme, NULL, 16);
                 current = current->next;
                 orN(num, current->token->lexeme, machine);
             }
@@ -362,7 +392,7 @@ HttpResponse *execute(Machine *machine)
             current = current->next;
             if (current->token->type == 7) // NUM
             {
-                int num = atoi(current->token->lexeme);
+                int num = strtol(current->token->lexeme, NULL, 16);
                 current = current->next;
                 xorN(num, current->token->lexeme, machine);
             }
@@ -376,16 +406,32 @@ HttpResponse *execute(Machine *machine)
 
         case 19: // NOT
             current = current->next;
-            not(current->token->lexeme, machine);
+            if (current->token->type == 7) // NUM
+            {
+                int num = strtol(current->token->lexeme, NULL, 16);
+                current = current->next;
+                notN(num, current->token->lexeme, machine);
+            }
+            else // REG
+            {
+                notR(current->token->lexeme, machine);
+            }
             break;
 
         case 20: // MOV
             current = current->next;
             if (current->token->type == 7) // NUM
             {
-                int num = atoi(current->token->lexeme);
+                int num = strtol(current->token->lexeme, NULL, 16);
                 current = current->next;
                 movN(num, current->token->lexeme, machine);
+            }
+            else if (current->token->type == 11) // IN
+            {
+                char *in = current->token->lexeme;
+                current = current->next;
+
+                movI(in, current->token->lexeme, machine);
             }
             else // REG
             {
@@ -422,8 +468,6 @@ HttpResponse *execute(Machine *machine)
             if (machine->flagC == true)
             {
                 current = getLabel(current->token, machine);
-                machine->flagC = false;
-                machine->flagZ = false;
             }
             break;
 
@@ -433,8 +477,6 @@ HttpResponse *execute(Machine *machine)
             if (machine->flagZ == true)
             {
                 current = getLabel(current->token, machine);
-                machine->flagC = false;
-                machine->flagZ = false;
             }
             break;
 
@@ -465,7 +507,7 @@ HttpResponse *execute(Machine *machine)
         case 27: // PUSH
             if (!isFull(&(machine->dataStack)))
             {
-                int num = atoi(current->token->lexeme);
+                int num = strtol(current->token->lexeme, NULL, 16);
                 push(&(machine->dataStack), num);
             }
             else

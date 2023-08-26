@@ -5,6 +5,98 @@
     <meta charset="UTF-8">
     <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
     <title>M+++</title>
+    <style>
+        body {
+            background-color: #f8f8f8;
+        }
+
+        #titulo {
+            display: flex;
+            justify-content: space-between;
+            text-align: center;
+        }
+
+        h1 {
+            text-align: center;
+            font-family: monospace;
+            flex-basis: 98.5%;
+        }
+
+        a {
+            text-decoration: none;
+            flex-basis: 1.5%;
+            font-size: 20px;
+            color: black;
+        }
+
+        a:hover {
+            font-weight: bold;
+        }
+
+        #codigo-area {
+            border-radius: 25px;
+            display: grid;
+            margin: 20px;
+        }
+
+        #input-ports-area {
+            display: flex;
+        }
+
+        .in-port,
+        .timer {
+            margin: 10px 5px;
+        }
+
+        .timer>input {
+            width: 60px;
+        }
+
+        input {
+            width: 25px;
+            height: 20px;
+            font-size: 14px;
+            text-align: center;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+        }
+
+        label {
+            font-size: 16px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 500px;
+            padding: 12px 20px;
+            box-sizing: border-box;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+            background-color: white;
+            font-size: 16px;
+            resize: none;
+        }
+
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            border-radius: 5px;
+        }
+
+        button:active {
+            background-color: #0d8d11;
+            color: white;
+        }
+    </style>
 </head>
 
 <body>
@@ -13,9 +105,39 @@
         <a href="https://github.com/jejung/maquina-plus-plus/blob/master/README.md" target="_blank"
             title="instruções M++">?</a>
     </div>
-    <div id="codigo-area">
-        <textarea type="text" id="codigo" name="codigo" required></textarea>
-        <button onclick="enviarCodigo()">Enviar</button>
+    <div id="input">
+        <div id="codigo-area">
+            <textarea type="text" id="codigo" name="codigo"></textarea>
+
+            <div id="input-ports-area">
+                <div class="in-port">
+                    <label for="IN0">IN0</label>
+                    <input type="text" value="00" id="IN0" maxlength="2" title="o valor deve ser hexadecimal">
+                </div>
+
+                <div class="in-port">
+                    <label for="IN1">IN1</label>
+                    <input type="text" value="00" id="IN1" maxlength="2" title="o valor deve ser hexadecimal">
+                </div>
+
+                <div class="in-port">
+                    <label for="IN2">IN2</label>
+                    <input type="text" value="00" id="IN2" maxlength="2" title="o valor deve ser hexadecimal">
+                </div>
+
+                <div class="in-port">
+                    <label for="IN3">IN3</label>
+                    <input type="text" value="00" id="IN3" maxlength="2" title="o valor deve ser hexadecimal">
+                </div>
+
+                <div class="timer">
+                    <label for="tempo">Tempo de execução máximo (ss)</label>
+                    <input type="number" value="300" min="10" max="1200" id="tempo">
+                </div>
+            </div>
+
+            <button onclick="enviarCodigo()">Enviar</button>
+        </div>
     </div>
     <script>
         var textArea = document.getElementById("codigo");
@@ -32,6 +154,19 @@
                 }
             }
         );
+
+        function validarINs() {
+            const in0 = document.getElementById("IN0").value;
+            const in1 = document.getElementById("IN1").value;
+            const in2 = document.getElementById("IN2").value;
+            const in3 = document.getElementById("IN3").value;
+
+            const hexRegex = /^[0-9A-Fa-f]+$/;
+
+            console.log(hexRegex.test(in0), in0)
+
+            return hexRegex.test(in0) && hexRegex.test(in1) && hexRegex.test(in2) && hexRegex.test(in3);
+        }
         function validarCodigo() {
             const allowedDigits = "0123456789"
             const allowedLetters = "ABCDEFGHIJKLMNOPQRSTUVXWYZ"
@@ -59,29 +194,39 @@
         }
         function enviarCodigo() {
             const codigo = validarCodigo() // valor do parâmetro código
+            const in0 = document.getElementById("IN0").value
+            const in1 = document.getElementById("IN1").value
+            const in2 = document.getElementById("IN2").value
+            const in3 = document.getElementById("IN3").value
+            const timer = document.getElementById("tempo").value;
+
             const url = "http://localhost:8080"; // URL do servidor web
 
-            fetch(url, {
-                method: "POST",
-                body: new URLSearchParams({ codigo }),
-            }).then((response) => {
-                if (response.ok) {
-                    response.text().then((text) => {
-                        alert(`${text}`);
-                    });
-                } else {
-                    if (response.status == 429) {
-                        alert(`ERRO 429: O servidor esta executando outra requisicao.`);
-                    }
-                    else {
+            if (validarINs()) {
+                fetch(url, {
+                    method: "POST",
+                    body: new URLSearchParams({ timer, in0, in1, in2, in3, codigo }),
+                }).then((response) => {
+                    if (response.ok) {
                         response.text().then((text) => {
-                            alert(`ERRO ${response.status}: ${text}`);
+                            alert(`${text}`);
                         });
+                    } else {
+                        if (response.status == 429) {
+                            alert(`ERRO 429: O servidor esta executando outra requisicao.`);
+                        }
+                        else {
+                            response.text().then((text) => {
+                                alert(`ERRO ${response.status}: ${text}`);
+                            });
+                        }
                     }
-                }
-            }).catch((error) => {
-                console.error(`Erro na solicitação: ${error}`);
-            });
+                }).catch((error) => {
+                    console.error(`Erro na solicitação: ${error}`);
+                });
+            } else {
+                alert("Verifique se todas as portas IN são hexadecimais válidos.")
+            }
         }
     </script>
 </body>

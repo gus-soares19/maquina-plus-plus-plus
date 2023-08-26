@@ -23,15 +23,16 @@ void initializeMemory(Memory *memory)
 void freeMemory(Memory *memory)
 {
     TokenNode *current = memory->head;
+    TokenNode *next = NULL;
 
     while (current != NULL)
     {
+        next = current->next;
         freeToken(current->token);
-        current = current->next;
+        free(current);
+        current = next;
     }
 
-    free(memory->head);
-    memory->head = NULL;
     memory = NULL;
 }
 

@@ -54,7 +54,8 @@ bool pushProduction(Parser *parser, int topStack, int tokenInput)
 
 bool isValid(Token *token)
 {
-    for (size_t i = 0; i < 24; i++)
+    int size = sizeof(MEMORY_CASES_VALUES) / sizeof(MEMORY_CASES_VALUES[0]);
+    for (size_t i = 0; i < size; i++)
     {
         if (token->type == MEMORY_CASES_VALUES[i])
         {
@@ -188,13 +189,15 @@ void freeParser(Parser *parser)
     free(parser->parserError);
     freeMachine(&(parser->_machine));
     free(parser);
-    parser = NULL;
+
+    parser->parserError = NULL;
 }
 
-HttpResponse *parse(Parser *parser, char *code)
+HttpResponse *parse(Parser *parser, char *code, char *in0, char *in1, char *in2, char *in3)
 {
     replace(code);
     setInput(&(parser->_tokenizer), code);
+    setInputs(&(parser->_machine), in0, in1, in2, in3);
 
     parser->_currentToken = getNextToken(&(parser->_tokenizer));
 

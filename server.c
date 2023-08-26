@@ -50,6 +50,26 @@ char *lerArquivoHTML(const char *nomeArquivo)
     return conteudo;
 }
 
+char *getValue(char *text, char *var)
+{
+    char *str = strchr(strstr(text, var), '&');
+
+    if (str != NULL)
+    {
+        size_t tamanho = str - text;
+        char *destino = (char *)malloc((tamanho + 1) * sizeof(char));
+
+        if (destino != NULL)
+        {
+            strncpy(destino, text, tamanho);
+            destino[tamanho] = '\0'; // Adiciona o caractere nulo para terminar a string destino
+            return destino + strlen(var);
+        }
+    }
+
+    return text + strlen(var);
+}
+
 int main(int argc, char const *argv[])
 {
     int server_fd, new_socket, valread;
@@ -57,7 +77,7 @@ int main(int argc, char const *argv[])
     int opt = 1;
     int addrlen = sizeof(address);
     char buffer[2048] = {0};
-    char response[2048] = {0};
+    char response[4096] = {0};
     const char *nomeArquivo = "client.html";
     bool executing = false;
 
@@ -136,13 +156,19 @@ int main(int argc, char const *argv[])
                 executing = true;
 
                 // trata a requisição POST
-                char *code = strstr(buffer, "codigo=");
-                if (code != NULL)
+                char *timer = getValue(strstr(buffer, "timer="), "timer=");
+                char *code = getValue(strstr(buffer, "codigo="), "codigo=");
+                char *in0 = getValue(strstr(buffer, "in0="), "in0=");
+                char *in1 = getValue(strstr(buffer, "in1="), "in1=");
+                char *in2 = getValue(strstr(buffer, "in2="), "in2=");
+                char *in3 = getValue(strstr(buffer, "in3="), "in3=");
+
+                if (code != NULL && in0 != NULL && in1 != NULL && in2 != NULL && in3 != NULL && timer != NULL)
                 {
-                    code += 7; // pula "codigo="
                     Parser *parser = (Parser *)malloc(sizeof(Parser));
                     initializeParser(parser);
-                    HttpResponse *httpResponse = parse(parser, code);
+
+                    HttpResponse *httpResponse = parse(parser, code, in0, in1, in2, in3);
 
                     char *text = httpResponseToText(httpResponse);
 
@@ -151,7 +177,6 @@ int main(int argc, char const *argv[])
                     free(text);
                     freeHttpResponse(httpResponse);
                     freeParser(parser);
-
                     executing = false;
                 }
                 else

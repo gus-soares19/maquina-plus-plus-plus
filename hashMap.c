@@ -19,23 +19,19 @@ void initializeHashMap(HashMap *hashMap)
     hashMap->head = NULL;
 }
 
-void freeHashMapNode(Node *node)
-{
-    if (node == NULL)
-    {
-        return;
-    }
-
-    free(node->key);
-    freeHashMapNode(node->next);
-    free(node);
-
-    node = NULL;
-}
-
 void freeHashMap(HashMap *hashMap)
 {
-    freeHashMapNode(hashMap->head);
+    Node *current = hashMap->head;
+    Node *next = NULL;
+
+    while (current != NULL)
+    {
+        next = current->next;
+        free(current->key);
+        free(current);
+        current = next;
+    }
+
     hashMap = NULL;
 }
 

@@ -22,6 +22,7 @@ void freeTokenizer(Tokenizer *tokenizer)
 {
     free(tokenizer->input);
     free(tokenizer->tokenizerError);
+
     tokenizer = NULL;
 }
 

@@ -23,6 +23,7 @@ void freeHttpResponse(HttpResponse *httpResponse)
     free(httpResponse->message);
     free(httpResponse->type);
     free(httpResponse);
+
     httpResponse = NULL;
 }
 

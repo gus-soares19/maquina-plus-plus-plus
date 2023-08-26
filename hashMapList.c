@@ -31,24 +31,19 @@ void initializeHashMapList(HashMapList *hashMapList)
     }
 }
 
-void freeListNode(NodeList *node)
-{
-    if (node == NULL)
-    {
-        return;
-    }
-    free(node);
-    node = NULL;
-}
-
 void freeList(List *list)
 {
-    if (list == NULL)
+    NodeList *current = list->values;
+    NodeList *next = NULL;
+
+    while (current != NULL)
     {
-        return;
+        next = current->next;
+        free(current);
+        current = next;
     }
 
-    freeListNode(list->values);
+    free(list->key);
     list = NULL;
 }
 
