@@ -131,8 +131,8 @@
                 </div>
 
                 <div class="timer">
-                    <label for="tempo">Tempo de execução máximo (ss)</label>
-                    <input type="number" value="300" min="10" max="1200" id="tempo">
+                    <label for="tempo">Tempo máximo de execução (ss)</label>
+                    <input type="number" value="300" min="10" max="1200" id="tempo" title="o tempo deve ser em segundos">
                 </div>
             </div>
 
@@ -162,8 +162,6 @@
             const in3 = document.getElementById("IN3").value;
 
             const hexRegex = /^[0-9A-Fa-f]+$/;
-
-            console.log(hexRegex.test(in0), in0)
 
             return hexRegex.test(in0) && hexRegex.test(in1) && hexRegex.test(in2) && hexRegex.test(in3);
         }
