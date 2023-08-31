@@ -1,6 +1,7 @@
 #include "memory.c"
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 #define REGS_SIZE 5
 #define IO_SIZE 4
 #define CALL_STACK_SIZE 4
@@ -25,6 +26,10 @@ typedef struct
     int inputs[IO_SIZE];
     bool flagC;
     bool flagZ;
+    int timer;
+    char *machineError;
+    char *errorState;
+    int errorCode;
 } Machine;
 
 void initializeMachine(Machine *machine)
@@ -45,6 +50,11 @@ void initializeMachine(Machine *machine)
     machine->labelHead = NULL;
     machine->flagC = false;
     machine->flagZ = false;
+    machine->machineError = (char *)malloc(64 * sizeof(char));
+    machine->errorState = (char *)malloc(32 * sizeof(char));
+
+    strcpy(machine->machineError, "");
+    strcpy(machine->errorState, "");
 }
 
 void setInputs(Machine *machine, char *in0, char *in1, char *in2, char *in3)
@@ -53,6 +63,11 @@ void setInputs(Machine *machine, char *in0, char *in1, char *in2, char *in3)
     machine->inputs[1] = strtol(in1, NULL, 16);
     machine->inputs[2] = strtol(in2, NULL, 16);
     machine->inputs[3] = strtol(in3, NULL, 16);
+}
+
+void setTimer(Machine *machine, int timer)
+{
+    machine->timer = timer;
 }
 
 void freeLabelNodes(LabelNode *head)
@@ -76,6 +91,8 @@ void freeMachine(Machine *machine)
     freeLabelNodes(machine->labelHead);
     freeMemory(&(machine->memory));
 
+    machine->machineError = NULL;
+    machine->errorState = NULL;
     machine = NULL;
 }
 
@@ -141,6 +158,8 @@ int checkNumValue(int num)
     {
         return num += MAX_INT;
     }
+
+    return num;
 }
 
 void andN(int num, char *reg, Machine *machine)
@@ -318,6 +337,7 @@ void movI(char *in, char *to, Machine *machine)
 
 HttpResponse *execute(Machine *machine)
 {
+    time_t startTime = time(NULL);
     TokenNode *current = machine->memory.head;
 
     while (current != NULL)
@@ -489,7 +509,10 @@ HttpResponse *execute(Machine *machine)
             }
             else
             {
-                return createHttpResponse("StackOverflow: Pilha de chamadas sobrecarregada", 400, "Bad Request");
+                strcpy(machine->machineError, "StackOverflow: Pilha de chamadas sobrecarregada");
+                strcpy(machine->errorState, "Bad Request");
+                machine->errorCode = 400;
+                break;
             }
             break;
 
@@ -500,7 +523,10 @@ HttpResponse *execute(Machine *machine)
             }
             else
             {
-                return createHttpResponse("StackUnderflow: Pilha de chamadas vazia", 400, "Bad Request");
+                strcpy(machine->machineError, "StackUnderflow: Pilha de chamadas vazia");
+                strcpy(machine->errorState, "Bad Request");
+                machine->errorCode = 400;
+                break;
             }
             break;
 
@@ -512,7 +538,10 @@ HttpResponse *execute(Machine *machine)
             }
             else
             {
-                return createHttpResponse("StackOverflow: Pilha de dados sobrecarregada", 400, "Bad Request");
+                strcpy(machine->machineError, "StackOverflow: Pilha de dados sobrecarregada");
+                strcpy(machine->errorState, "Bad Request");
+                machine->errorCode = 400;
+                break;
             }
             break;
 
@@ -524,7 +553,10 @@ HttpResponse *execute(Machine *machine)
             }
             else
             {
-                return createHttpResponse("StackUnderflow: Pilha de dados vazia", 400, "Bad Request");
+                strcpy(machine->machineError, "StackUnderflow: Pilha de dados vazia");
+                strcpy(machine->errorState, "Bad Request");
+                machine->errorCode = 400;
+                break;
             }
             break;
 
@@ -532,12 +564,37 @@ HttpResponse *execute(Machine *machine)
             break;
         }
 
+        // interrompe a execucao se identificar algum erro
+        if (strlen(machine->machineError) != 0)
+        {
+            break;
+        }
+
+        // interrompe a execucao se o tempo limite exceder
+        time_t currentTime = time(NULL);
+        if ((currentTime - startTime) >= machine->timer)
+        {
+            strcpy(machine->machineError, "Tempo limite atingido. Encerrando o programa");
+            strcpy(machine->errorState, "OK");
+            machine->errorCode = 200;
+            break;
+        }
+
+        // interrompe a execucao se current for NULL
         if (current == NULL)
         {
-            return createHttpResponse("Execucao interrompida devido a erro inesperado", 500, "Internal Server Error");
+            strcpy(machine->machineError, "Execucao interrompida devido a erro inesperado");
+            strcpy(machine->errorState, "Internal Server Error");
+            machine->errorCode = 500;
+            break;
         }
 
         current = current->next;
+    }
+
+    if (strlen(machine->machineError) != 0)
+    {
+        return createHttpResponse(machine->machineError, machine->errorCode, machine->errorState);
     }
 
     return createHttpResponse("Execucao concluida com suscesso", 200, "OK");

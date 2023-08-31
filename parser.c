@@ -183,21 +183,23 @@ void initializeParser(Parser *parser)
 
 void freeParser(Parser *parser)
 {
+    freeMachine(&(parser->_machine));
     freeContextualizer(&(parser->_contextualizer));
     freeTokenizer(&(parser->_tokenizer));
     clear(&(parser->_stack));
     free(parser->parserError);
-    freeMachine(&(parser->_machine));
     free(parser);
 
     parser->parserError = NULL;
+    parser = NULL;
 }
 
-HttpResponse *parse(Parser *parser, char *code, char *in0, char *in1, char *in2, char *in3)
+HttpResponse *parse(Parser *parser, char *code, char *in0, char *in1, char *in2, char *in3, char *timer)
 {
     replace(code);
     setInput(&(parser->_tokenizer), code);
     setInputs(&(parser->_machine), in0, in1, in2, in3);
+    setTimer(&(parser->_machine), atoi(timer));
 
     parser->_currentToken = getNextToken(&(parser->_tokenizer));
 

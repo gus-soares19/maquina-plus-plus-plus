@@ -168,7 +168,7 @@ int main(int argc, char const *argv[])
                     Parser *parser = (Parser *)malloc(sizeof(Parser));
                     initializeParser(parser);
 
-                    HttpResponse *httpResponse = parse(parser, code, in0, in1, in2, in3);
+                    HttpResponse *httpResponse = parse(parser, code, in0, in1, in2, in3, timer);
 
                     char *text = httpResponseToText(httpResponse);
 
