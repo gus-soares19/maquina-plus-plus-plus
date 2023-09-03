@@ -91,6 +91,9 @@ void freeMachine(Machine *machine)
     freeLabelNodes(machine->labelHead);
     freeMemory(&(machine->memory));
 
+    free(machine->machineError);
+    free(machine->errorState);
+    
     machine->machineError = NULL;
     machine->errorState = NULL;
     machine = NULL;

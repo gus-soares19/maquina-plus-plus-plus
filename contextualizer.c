@@ -21,7 +21,7 @@ void initializeContextualizer(Contextualizer *contextualizer)
     contextualizer->stackIndex = 0;
     contextualizer->generatedByte = 0;
     contextualizer->generatedByteAux = 0;
-    contextualizer->contextualizerError = (char *)malloc(32 * sizeof(char));
+    contextualizer->contextualizerError = (char *)malloc(64 * sizeof(char));
 
     strcpy(contextualizer->contextualizerError, "");
 
