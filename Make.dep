@@ -1,0 +1,73 @@
+server.c.home.gustavo.nuttxspace.apps.examples.m_three_plus.o: server.c \
+ /home/gustavo/nuttxspace/nuttx/include/stdio.h \
+ /home/gustavo/nuttxspace/nuttx/include/nuttx/config.h \
+ /home/gustavo/nuttxspace/nuttx/include/sys/types.h \
+ /home/gustavo/nuttxspace/nuttx/include/nuttx/compiler.h \
+ /home/gustavo/nuttxspace/nuttx/include/stdint.h \
+ /home/gustavo/nuttxspace/nuttx/include/arch/types.h \
+ /home/gustavo/nuttxspace/nuttx/include/arch/inttypes.h \
+ /home/gustavo/nuttxspace/nuttx/include/limits.h \
+ /home/gustavo/nuttxspace/nuttx/include/arch/limits.h \
+ /opt/xtensa/xtensa-esp32-elf/lib/gcc/xtensa-esp32-elf/8.2.0/include/stdarg.h \
+ /home/gustavo/nuttxspace/nuttx/include/time.h \
+ /home/gustavo/nuttxspace/nuttx/include/nuttx/fs/fs.h \
+ /home/gustavo/nuttxspace/nuttx/include/stdbool.h \
+ /home/gustavo/nuttxspace/nuttx/include/dirent.h \
+ /home/gustavo/nuttxspace/nuttx/include/nuttx/mutex.h \
+ /home/gustavo/nuttxspace/nuttx/include/assert.h \
+ /home/gustavo/nuttxspace/nuttx/include/nuttx/semaphore.h \
+ /home/gustavo/nuttxspace/nuttx/include/errno.h \
+ /home/gustavo/nuttxspace/nuttx/include/semaphore.h \
+ /home/gustavo/nuttxspace/nuttx/include/nuttx/queue.h \
+ /home/gustavo/nuttxspace/nuttx/include/nuttx/clock.h \
+ /home/gustavo/nuttxspace/nuttx/include/nuttx/mm/map.h \
+ /home/gustavo/nuttxspace/nuttx/include/nuttx/mm/gran.h \
+ /home/gustavo/nuttxspace/nuttx/include/nuttx/lib/lib.h \
+ /home/gustavo/nuttxspace/nuttx/include/nuttx/kmalloc.h \
+ /home/gustavo/nuttxspace/nuttx/include/stdlib.h \
+ /home/gustavo/nuttxspace/nuttx/include/nuttx/mm/mm.h \
+ /home/gustavo/nuttxspace/nuttx/include/nuttx/addrenv.h \
+ /home/gustavo/nuttxspace/nuttx/include/nuttx/wqueue.h \
+ /home/gustavo/nuttxspace/nuttx/include/nuttx/wdog.h \
+ /home/gustavo/nuttxspace/nuttx/include/arch/arch.h \
+ /home/gustavo/nuttxspace/nuttx/include/stddef.h \
+ /home/gustavo/nuttxspace/nuttx/include/nuttx/userspace.h \
+ /home/gustavo/nuttxspace/nuttx/include/signal.h \
+ /home/gustavo/nuttxspace/nuttx/include/pthread.h \
+ /home/gustavo/nuttxspace/nuttx/include/unistd.h \
+ /home/gustavo/nuttxspace/nuttx/include/nuttx/arch.h \
+ /home/gustavo/nuttxspace/nuttx/include/nuttx/cache.h \
+ /home/gustavo/nuttxspace/nuttx/include/nuttx/sched.h \
+ /home/gustavo/nuttxspace/nuttx/include/sched.h \
+ /home/gustavo/nuttxspace/nuttx/include/strings.h \
+ /home/gustavo/nuttxspace/nuttx/include/string.h \
+ /home/gustavo/nuttxspace/nuttx/include/alloca.h \
+ /home/gustavo/nuttxspace/nuttx/include/nuttx/irq.h \
+ /home/gustavo/nuttxspace/nuttx/include/arch/irq.h \
+ /home/gustavo/nuttxspace/nuttx/include/arch/chip/tie.h \
+ /home/gustavo/nuttxspace/nuttx/include/arch/chip/core-isa.h \
+ /home/gustavo/nuttxspace/nuttx/include/arch/xtensa/core.h \
+ /home/gustavo/nuttxspace/nuttx/include/arch/xtensa/xtensa_specregs.h \
+ /home/gustavo/nuttxspace/nuttx/include/arch/xtensa/xtensa_corebits.h \
+ /home/gustavo/nuttxspace/nuttx/include/arch/xtensa/xtensa_coproc.h \
+ /home/gustavo/nuttxspace/nuttx/include/arch/chip/irq.h \
+ /home/gustavo/nuttxspace/nuttx/include/arch/esp32/chip.h \
+ /home/gustavo/nuttxspace/nuttx/include/arch/lx6/irq.h \
+ /home/gustavo/nuttxspace/nuttx/include/nuttx/net/net.h \
+ /home/gustavo/nuttxspace/nuttx/include/sys/socket.h \
+ /home/gustavo/nuttxspace/nuttx/include/sys/uio.h \
+ /home/gustavo/nuttxspace/nuttx/include/nuttx/mm/iob.h \
+ /home/gustavo/nuttxspace/nuttx/include/malloc.h \
+ /home/gustavo/nuttxspace/nuttx/include/arpa/inet.h \
+ /home/gustavo/nuttxspace/nuttx/include/netinet/in.h \
+ /home/gustavo/nuttxspace/nuttx/include/endian.h \
+ /home/gustavo/nuttxspace/nuttx/include/sys/endian.h httpResponse.c \
+ parser.c token.c stack.c constants.c tokenizerConstants.c \
+ parserConstants.c contextualizerConstants.c tokenizer.c contextualizer.c \
+ /home/gustavo/nuttxspace/nuttx/include/ctype.h \
+ /home/gustavo/nuttxspace/nuttx/include/langinfo.h \
+ /home/gustavo/nuttxspace/nuttx/include/nl_types.h \
+ /home/gustavo/nuttxspace/nuttx/include/locale.h hashMap.c hashMapList.c \
+ machine.c memory.c
+# No files specified for dependency generation
+# No files specified for dependency generation
