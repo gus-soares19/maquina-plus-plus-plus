@@ -166,6 +166,12 @@
 
             return hexRegex.test(in0) && hexRegex.test(in1) && hexRegex.test(in2) && hexRegex.test(in3);
         }
+
+        function validarTimer() {
+            let timer = document.getElementById("tempo").value;
+            return !(timer < 10 || timer > 1200);
+        }
+
         function validarCodigo() {
             const allowedDigits = "0123456789"
             const allowedLetters = "ABCDEFGHIJKLMNOPQRSTUVXWYZ"
@@ -191,41 +197,63 @@
 
             return codigo.replaceAll("\n", "_").replaceAll(",", "-").replaceAll(";", ".").replaceAll(":", "*").toUpperCase();;
         }
+
+        function getIpAddress() {
+            return new Promise((resolve, reject) => {
+                fetch('https://api.ipify.org?format=json')
+                    .then(response => response.json())
+                    .then(data => {
+                        const ipAddress = data.ip;
+                        resolve(ipAddress);
+                    })
+                    .catch(error => {
+                        reject(error);
+                    });
+            });
+        }
+
         function enviarCodigo() {
-            const codigo = validarCodigo() // valor do parâmetro código
-            const in0 = document.getElementById("IN0").value
-            const in1 = document.getElementById("IN1").value
-            const in2 = document.getElementById("IN2").value
-            const in3 = document.getElementById("IN3").value
-            const timer = document.getElementById("tempo").value;
+            getIpAddress()
+                .then(ipAddress => {
+                    if (validarINs() && validarTimer()) {
 
-            const url = "http://localhost:8080"; // URL do servidor web
+                        console.log('Endereço de IP atual:', ipAddress, `http://${ipAddress}:8080`);
+                        const url = `http://${ipAddress}:8080`; // URL do servidor web
+                        const codigo = validarCodigo() // valor do parâmetro código
+                        const in0 = document.getElementById("IN0").value
+                        const in1 = document.getElementById("IN1").value
+                        const in2 = document.getElementById("IN2").value
+                        const in3 = document.getElementById("IN3").value
+                        const timer = document.getElementById("tempo").value;
 
-            if (validarINs()) {
-                fetch(url, {
-                    method: "POST",
-                    body: new URLSearchParams({ timer, in0, in1, in2, in3, codigo }),
-                }).then((response) => {
-                    if (response.ok) {
-                        response.text().then((text) => {
-                            alert(`${text}`);
+                        fetch(url, {
+                            method: "POST",
+                            body: new URLSearchParams({ timer, in0, in1, in2, in3, codigo }),
+                        }).then((response) => {
+                            if (response.ok) {
+                                response.text().then((text) => {
+                                    alert(`${text}`);
+                                });
+                            } else {
+                                if (response.status == 429) {
+                                    alert(`ERRO 429: O servidor esta executando outra requisicao.`);
+                                }
+                                else {
+                                    response.text().then((text) => {
+                                        alert(`ERRO ${response.status}: ${text}`);
+                                    });
+                                }
+                            }
+                        }).catch((error) => {
+                            console.error(`Erro na solicitação: ${error}`);
                         });
                     } else {
-                        if (response.status == 429) {
-                            alert(`ERRO 429: O servidor esta executando outra requisicao.`);
-                        }
-                        else {
-                            response.text().then((text) => {
-                                alert(`ERRO ${response.status}: ${text}`);
-                            });
-                        }
+                        alert("Verifique se todas as portas IN são hexadecimais válidos e se o timer esta dentro do intervalo permitido.")
                     }
-                }).catch((error) => {
-                    console.error(`Erro na solicitação: ${error}`);
+                })
+                .catch(error => {
+                    alert('Erro ao obter o endereço de IP:', error);
                 });
-            } else {
-                alert("Verifique se todas as portas IN são hexadecimais válidos.")
-            }
         }
     </script>
 </body>
