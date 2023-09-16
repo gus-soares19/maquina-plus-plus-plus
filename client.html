@@ -6,95 +6,25 @@
     <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
     <title>M+++</title>
     <style>
-        body {
-            background-color: #f8f8f8;
-        }
-
         #titulo {
             display: flex;
-            justify-content: space-between;
-            text-align: center;
+            justify-content: center;
         }
 
-        h1 {
-            text-align: center;
-            font-family: monospace;
-            flex-basis: 98.5%;
-        }
-
-        a {
-            text-decoration: none;
-            flex-basis: 1.5%;
-            font-size: 20px;
-            color: black;
-        }
-
-        a:hover {
-            font-weight: bold;
-        }
-
-        #codigo-area {
-            border-radius: 25px;
-            display: grid;
-            margin: 20px;
-        }
-
-        #input-ports-area {
+        #in-ports {
             display: flex;
         }
 
         .in-port,
         .timer {
-            margin: 10px 5px;
-        }
-
-        .timer>input {
-            width: 60px;
-        }
-
-        input {
-            width: 25px;
-            height: 20px;
-            font-size: 14px;
-            text-align: center;
-            border: 2px solid #ccc;
-            border-radius: 4px;
-        }
-
-        label {
-            font-size: 16px;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            text-align: center;
-            margin-bottom: 5px;
+            margin: 5px 5px;
         }
 
         textarea {
             width: 100%;
             height: 500px;
-            padding: 12px 20px;
-            box-sizing: border-box;
-            border: 2px solid #ccc;
-            border-radius: 4px;
-            background-color: white;
             font-size: 16px;
             resize: none;
-        }
-
-        button {
-            background-color: #4CAF50;
-            border: none;
-            color: white;
-            padding: 15px 32px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 16px;
-            border-radius: 5px;
-        }
-
-        button:active {
-            background-color: #0d8d11;
-            color: white;
         }
     </style>
 </head>
@@ -102,69 +32,58 @@
 <body>
     <div id="titulo">
         <h1>Escreva um código no assembly da M+++ para ser interpretado</h1>
-        <a href="https://github.com/jejung/maquina-plus-plus/blob/master/README.md" target="_blank"
-            title="instruções M++">?</a>
     </div>
     <div id="input">
         <div id="codigo-area">
             <textarea type="text" id="codigo" name="codigo"></textarea>
-
-            <div id="input-ports-area">
+            <div id="in-ports">
                 <div class="in-port">
                     <label for="IN0">IN0</label>
-                    <input type="text" value="00" id="IN0" maxlength="2" title="o valor deve ser hexadecimal">
+                    <input type="text" value="00" id="IN0" maxlength="2">
                 </div>
 
                 <div class="in-port">
                     <label for="IN1">IN1</label>
-                    <input type="text" value="00" id="IN1" maxlength="2" title="o valor deve ser hexadecimal">
+                    <input type="text" value="00" id="IN1" maxlength="2">
                 </div>
 
                 <div class="in-port">
                     <label for="IN2">IN2</label>
-                    <input type="text" value="00" id="IN2" maxlength="2" title="o valor deve ser hexadecimal">
+                    <input type="text" value="00" id="IN2" maxlength="2">
                 </div>
 
                 <div class="in-port">
                     <label for="IN3">IN3</label>
-                    <input type="text" value="00" id="IN3" maxlength="2" title="o valor deve ser hexadecimal">
+                    <input type="text" value="00" id="IN3" maxlength="2">
                 </div>
 
                 <div class="timer">
                     <label for="tempo">Tempo máximo de execução (ss)</label>
-                    <input type="number" value="300" min="10" max="1200" id="tempo"
-                        title="o tempo deve ser em segundos">
+                    <input type="number" value="300" min="10" max="1200" id="tempo">
                 </div>
             </div>
-
             <button onclick="enviarCodigo()">Enviar</button>
         </div>
     </div>
     <script>
-        var textArea = document.getElementById("codigo");
-        textArea.addEventListener(
-            'keypress',
-            function (e) {
-                const allowedDigits = "0123456789"
-                const allowedLetters = "ABCDEFGHIJKLMNOPQRSTUVXWYZ"
-                const allowedChars = ";,:"
-
-                if (!allowedDigits.includes(e.key) && !allowedLetters.includes(e.key.toUpperCase()) && !allowedChars.includes(e.key) &&
-                    (e.keyCode != 32 && e.keyCode != 13 && e.keyCode != 10)) {
-                    e.preventDefault();
-                }
+        document.getElementById("codigo").addEventListener('keypress', function (e) {
+            const allowedChars = "0123456789ABCDEFGHIJKLMNOPQRSTUVXWYZ;,:";
+            if (!allowedChars.includes(e.key) && ![32, 13, 10].includes(e.keyCode)) {
+                e.preventDefault();
             }
-        );
+        });
 
         function validarINs() {
-            const in0 = document.getElementById("IN0").value;
-            const in1 = document.getElementById("IN1").value;
-            const in2 = document.getElementById("IN2").value;
-            const in3 = document.getElementById("IN3").value;
-
             const hexRegex = /^[0-9A-Fa-f]+$/;
 
-            return hexRegex.test(in0) && hexRegex.test(in1) && hexRegex.test(in2) && hexRegex.test(in3);
+            for (let i = 0; i < 4; i++) {
+                const input = document.getElementById(`IN${i}`).value;
+                if (!hexRegex.test(input)) {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         function validarTimer() {
@@ -173,89 +92,48 @@
         }
 
         function validarCodigo() {
-            const allowedDigits = "0123456789"
-            const allowedLetters = "ABCDEFGHIJKLMNOPQRSTUVXWYZ"
-            const allowedChars = ";,:"
+            const allowedChars = "0123456789ABCDEFGHIJKLMNOPQRSTUVXWYZ;,: \n";
 
-            let codigo = document.getElementById("codigo").value
+            let codigo = document.getElementById("codigo").value.toUpperCase();
+            codigo = codigo.replace(/\/\/.*/g, '').trim().split('').filter(char => allowedChars.includes(char)).join('');
 
-            // remove comentarios e espacos extras
-            let linhas = codigo.split("\n");
-            linhas.forEach((linha, i) => {
-                linhas[i] = linha.replace(/\/\/.*/g, '').trim();
-            });
+            return codigo.replaceAll("\n", "_").replaceAll(",", "-").replaceAll(";", ".").replaceAll(":", "*").toUpperCase();
+        }
 
-            codigo = linhas.join("\n");
-
-            // remove caracteres nao permitidos
-            for (let i = 0; i < codigo.length; i++) {
-                if (!allowedDigits.includes(codigo[i]) && !allowedLetters.includes(codigo[i].toUpperCase()) && !allowedChars.includes(codigo[i]) &&
-                    codigo.charCodeAt(i) != 32 && codigo.charCodeAt(i) != 13 && codigo.charCodeAt(i) != 10) {
-                    codigo.replace(codigo[i], "");
+        async function enviarCodigo() {
+            try {
+                if (!validarINs() || !validarTimer()) {
+                    alert("Verifique se todas as portas IN e o timer.");
+                    return;
                 }
-            }
+                const url = "http://192.168.1.15:8080";
+                const codigo = validarCodigo();
+                const in0 = document.getElementById("IN0").value;
+                const in1 = document.getElementById("IN1").value;
+                const in2 = document.getElementById("IN2").value;
+                const in3 = document.getElementById("IN3").value;
+                const timer = document.getElementById("tempo").value;
 
-            return codigo.replaceAll("\n", "_").replaceAll(",", "-").replaceAll(";", ".").replaceAll(":", "*").toUpperCase();;
-        }
-
-        function getIpAddress() {
-            return new Promise((resolve, reject) => {
-                fetch('https://api.ipify.org?format=json')
-                    .then(response => response.json())
-                    .then(data => {
-                        const ipAddress = data.ip;
-                        resolve(ipAddress);
-                    })
-                    .catch(error => {
-                        reject(error);
-                    });
-            });
-        }
-
-        function enviarCodigo() {
-            getIpAddress()
-                .then(ipAddress => {
-                    if (validarINs() && validarTimer()) {
-
-                        console.log('Endereço de IP atual:', ipAddress, `http://${ipAddress}:8080`);
-                        const url = `http://${ipAddress}:8080`; // URL do servidor web
-                        const codigo = validarCodigo() // valor do parâmetro código
-                        const in0 = document.getElementById("IN0").value
-                        const in1 = document.getElementById("IN1").value
-                        const in2 = document.getElementById("IN2").value
-                        const in3 = document.getElementById("IN3").value
-                        const timer = document.getElementById("tempo").value;
-
-                        fetch(url, {
-                            method: "POST",
-                            body: new URLSearchParams({ timer, in0, in1, in2, in3, codigo }),
-                        }).then((response) => {
-                            if (response.ok) {
-                                response.text().then((text) => {
-                                    alert(`${text}`);
-                                });
-                            } else {
-                                if (response.status == 429) {
-                                    alert(`ERRO 429: O servidor esta executando outra requisicao.`);
-                                }
-                                else {
-                                    response.text().then((text) => {
-                                        alert(`ERRO ${response.status}: ${text}`);
-                                    });
-                                }
-                            }
-                        }).catch((error) => {
-                            console.error(`Erro na solicitação: ${error}`);
-                        });
-                    } else {
-                        alert("Verifique se todas as portas IN são hexadecimais válidos e se o timer esta dentro do intervalo permitido.")
-                    }
-                })
-                .catch(error => {
-                    alert('Erro ao obter o endereço de IP:', error);
+                const response = await fetch(url, {
+                    method: "POST",
+                    body: new URLSearchParams({ timer, in0, in1, in2, in3, codigo }),
                 });
+
+                if (response.ok) {
+                    const text = await response.text();
+                    alert(text);
+                } else {
+                    if (response.status === 429) {
+                        alert("ERRO 429: O servidor está ocupado.");
+                    } else {
+                        const text = await response.text();
+                        alert(`ERRO ${response.status}: ${text}`);
+                    }
+                }
+            } catch (error) {
+                alert(`Erro: ${error.message}`);
+            }
         }
     </script>
 </body>
-
 </html>

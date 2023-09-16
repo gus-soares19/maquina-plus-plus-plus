@@ -7,6 +7,8 @@
 #include "httpResponse.c"
 #include "parser.c"
 
+#include <unistd.h>
+
 #define PORT 8080
 
 char *lerArquivoHTML(const char *nomeArquivo)
@@ -70,7 +72,24 @@ char *getValue(char *text, char *var)
     return text + strlen(var);
 }
 
-int main(int argc, char const *argv[])
+void replaceTextByIP(char *input, const char *target, const char *replacement)
+{
+    char *position = strstr(input, target);
+
+    if (position != NULL) {
+        int offset = position - input;
+        char result[strlen(input)];
+
+        strncpy(result, input, offset);
+        result[offset] = '\0';
+
+        strcat(result, replacement);
+        strcat(result, position + strlen(target));
+        strcpy(input, result);
+    }
+}
+
+int main(int argc, char *argv[]) 
 {
     int server_fd, new_socket, valread;
     struct sockaddr_in address;
@@ -78,7 +97,7 @@ int main(int argc, char const *argv[])
     int addrlen = sizeof(address);
     char buffer[2048] = {0};
     char response[4096] = {0};
-    const char *nomeArquivo = "client.html";
+    const char *nomeArquivo = "/data/client.html";
     bool executing = false;
 
     // Cria um descritor do socket
@@ -118,6 +137,7 @@ int main(int argc, char const *argv[])
             perror("accept");
             exit(EXIT_FAILURE);
         }
+
         valread = read(new_socket, buffer, 1024);
 
         if (valread > 0)
@@ -130,6 +150,7 @@ int main(int argc, char const *argv[])
 
                 if (conteudo != NULL)
                 {
+                    //replaceTextByIP(conteudo, "SERVER_IP_AD", inet_ntoa(address.sin_addr));
                     sprintf(response, "%s%s", "HTTP/1.1 200 OK\r\n"
                                               "Content-Type: text/html; charset=utf-8\r\n"
                                               "\r\n",
@@ -191,6 +212,7 @@ int main(int argc, char const *argv[])
                 write(new_socket, "HTTP/1.1 400 Bad Request\n\n", 25);
             }
         }
+        
         memset(buffer, 0, sizeof(buffer));
         memset(response, 0, sizeof(response));
         close(new_socket);
