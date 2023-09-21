@@ -294,7 +294,7 @@ void inc(char *from, char *to, Machine *machine)
 {
     int regFromPos = from[0] - A_ASCII;
     int regToPos = to[0] - A_ASCII;
-    int value = machine->regs[regFromPos] + (machine->regs[0] + 1);
+    int value = machine->regs[regFromPos] + 1;
     machine->regs[regToPos] = checkNumValue(value);
 
     checkFlagC(machine, value);

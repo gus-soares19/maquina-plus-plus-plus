@@ -10,6 +10,7 @@
 #include <unistd.h>
 
 #define PORT 8080
+#define IP "192.168.1.15"
 
 char *lerArquivoHTML(const char *nomeArquivo)
 {
@@ -72,27 +73,40 @@ char *getValue(char *text, char *var)
     return text + strlen(var);
 }
 
-void replaceTextByIP(char *input, const char *target, const char *replacement)
+char *replaceTextByIP(char *input, const char *target, const char *replacement)
 {
     char *position = strstr(input, target);
 
-    if (position != NULL) {
-        int offset = position - input;
-        char result[strlen(input)];
-
-        strncpy(result, input, offset);
-        result[offset] = '\0';
-
-        strcat(result, replacement);
-        strcat(result, position + strlen(target));
-        strcpy(input, result);
+    if (position == NULL) {
+        return strdup(input);
     }
+
+    int originalLength = strlen(input);
+    int patternLength = strlen(target);
+    int replacementLength = strlen(replacement);
+    int newSize = originalLength - patternLength + replacementLength;
+
+    char *result = (char *)malloc(newSize + 1);
+
+    if (result == NULL) {
+        fprintf(stderr, "Erro ao alocar memória.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    strncpy(result, input, position - input); 
+
+    result[position - input] = '\0';   
+
+    strcat(result, replacement);
+    strcat(result, position + patternLength);
+
+    return result;
 }
 
 int main(int argc, char *argv[]) 
 {
     int server_fd, new_socket, valread;
-    struct sockaddr_in address;
+     struct sockaddr_in address;
     int opt = 1;
     int addrlen = sizeof(address);
     char buffer[2048] = {0};
@@ -113,22 +127,28 @@ int main(int argc, char *argv[])
         perror("setsockopt");
         exit(EXIT_FAILURE);
     }
+
     address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(PORT);
 
+    if (inet_pton(AF_INET, IP, &(address.sin_addr)) < 1) {
+        perror("Erro ao converter endereço IP.");
+        exit(EXIT_FAILURE);
+    }
+    
     if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0)
     {
         perror("bind falhou");
         exit(EXIT_FAILURE);
     }
+
     if (listen(server_fd, 3) < 0)
     {
         perror("listen");
         exit(EXIT_FAILURE);
     }
 
-    printf("aguardando requisicoes na porta %d...\n", PORT);
+    printf("aguardando requisicoes no endereco %s:%d...\n", inet_ntoa(address.sin_addr), PORT);
     // aguarda por requisições
     while (1)
     {
@@ -149,16 +169,17 @@ int main(int argc, char *argv[])
                 char *conteudo = lerArquivoHTML(nomeArquivo);
 
                 if (conteudo != NULL)
-                {
-                    //replaceTextByIP(conteudo, "SERVER_IP_AD", inet_ntoa(address.sin_addr));
+                {                    
+                    char *html = replaceTextByIP(conteudo, "SERVER_IP_AD", IP);
                     sprintf(response, "%s%s", "HTTP/1.1 200 OK\r\n"
                                               "Content-Type: text/html; charset=utf-8\r\n"
                                               "\r\n",
-                            conteudo);
+                            html);
 
                     // Envia a resposta do servidor para o cliente
                     send(new_socket, response, strlen(response), 0);
                     free(conteudo);
+                    free(html);
                 }
                 else
                 {
