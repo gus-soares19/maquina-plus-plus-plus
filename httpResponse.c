@@ -9,7 +9,7 @@ HttpResponse *createHttpResponse(char *message, int code, char *type)
 {
     HttpResponse *response = (HttpResponse *)malloc(sizeof(HttpResponse));
     response->type = (char *)malloc(16 * sizeof(char));
-    response->message = (char *)malloc(64 * sizeof(char));
+    response->message = (char *)malloc(192 * sizeof(char));
 
     response->code = code;
     strcpy(response->type, type);
@@ -29,7 +29,7 @@ void freeHttpResponse(HttpResponse *httpResponse)
 
 char *httpResponseToText(HttpResponse *httpResponse)
 {
-    char *response = (char *)malloc(256 * sizeof(char));
+    char *response = (char *)malloc(384 * sizeof(char));
 
     sprintf(response,
             "HTTP/1.1 %d %s\r\n"

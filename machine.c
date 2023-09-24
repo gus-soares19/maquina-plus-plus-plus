@@ -24,6 +24,7 @@ typedef struct
     LabelNode *labelHead;
     int regs[REGS_SIZE];
     int inputs[IO_SIZE];
+    int outputs[IO_SIZE];
     bool flagC;
     bool flagZ;
     int timer;
@@ -42,6 +43,7 @@ void initializeMachine(Machine *machine)
     for (int i = 0; i < IO_SIZE; i++)
     {
         machine->inputs[i] = 0;
+        machine->outputs[i] = 0;
     }
 
     initializeMemory(&(machine->memory));
@@ -50,7 +52,7 @@ void initializeMachine(Machine *machine)
     machine->labelHead = NULL;
     machine->flagC = false;
     machine->flagZ = false;
-    machine->machineError = (char *)malloc(64 * sizeof(char));
+    machine->machineError = (char *)malloc(192 * sizeof(char));
     machine->errorState = (char *)malloc(32 * sizeof(char));
 
     strcpy(machine->machineError, "");
@@ -97,6 +99,25 @@ void freeMachine(Machine *machine)
     machine->machineError = NULL;
     machine->errorState = NULL;
     machine = NULL;
+}
+
+void addOUTsToMessage(Machine *machine){
+    char value[10];
+    strcat(machine->machineError, "\nOUT0:");
+    sprintf(value, "%X", machine->outputs[0]);
+    strcat(machine->machineError, value);
+
+    strcat(machine->machineError, " OUT1:");
+    sprintf(value, "%X", machine->outputs[1]);
+    strcat(machine->machineError, value);
+
+    strcat(machine->machineError, " OUT2:");
+    sprintf(value, "%X", machine->outputs[2]);
+    strcat(machine->machineError, value);
+
+    strcat(machine->machineError, " OUT3:");
+    sprintf(value, "%X", machine->outputs[3]);
+    strcat(machine->machineError, value);
 }
 
 TokenNode *getLabel(Token *token, Machine *machine)
@@ -320,15 +341,16 @@ void movR(char *from, char *to, Machine *machine)
     checkFlagZ(machine, machine->regs[regFromPos]);
 }
 
-// indetificar OUT (1, 2, 3) e retornar valor
 void movO(char *from, char *out, Machine *machine)
 {
+    int outPos;
+    sscanf(out, "OUT%d", &outPos);
     int regFromPos = from[0] - A_ASCII;
+     machine->outputs[outPos] = machine->regs[regFromPos];
 
     printf("%s: %X\n", out, machine->regs[regFromPos]);
 }
 
-// indetificar IN (1, 2, 3) e obter valor
 void movI(char *in, char *to, Machine *machine)
 {
     int inPos;
@@ -595,6 +617,7 @@ HttpResponse *execute(Machine *machine)
         current = current->next;
     }
 
+    addOUTsToMessage(machine);
     if (strlen(machine->machineError) != 0)
     {
         return createHttpResponse(machine->machineError, machine->errorCode, machine->errorState);

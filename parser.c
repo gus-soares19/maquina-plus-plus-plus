@@ -173,7 +173,7 @@ void initializeParser(Parser *parser)
     push(&(parser->_stack), DOLLAR);
     push(&(parser->_stack), START_SYMBOL);
 
-    parser->parserError = (char *)malloc(64 * sizeof(char));
+    parser->parserError = (char *)malloc(192 * sizeof(char));
 
     strcpy(parser->parserError, "");
 
