@@ -59,21 +59,21 @@
 
                 <div class="timer">
                     <label for="tempo">Tempo máximo de execução (ss)</label>
-                    <input type="number" value="300" min="10" max="1200" id="tempo">
+                    <input type="number" value="60" min="10" max="1200" id="tempo">
                 </div>
             </div>
-            <button onclick="enviarCodigo()">Enviar</button>
+            <button id="botao" onclick="enviarCodigo()">Enviar</button>
         </div>
     </div>
     <script>
         document.getElementById("codigo").addEventListener('keypress', function (e) {
             const allowedChars = "0123456789ABCDEFGHIJKLMNOPQRSTUVXWYZ;,:";
-            if (!allowedChars.includes(e.key) && ![32, 13, 10].includes(e.keyCode)) {
+            if (!allowedChars.includes(e.key.toUpperCase()) && ![32, 13, 10].includes(e.keyCode)) {
                 e.preventDefault();
             }
         });
 
-        function validarINs() {
+        function INsValidas() {
             const hexRegex = /^[0-9A-Fa-f]+$/;
 
             for (let i = 0; i < 4; i++) {
@@ -86,12 +86,16 @@
             return true;
         }
 
-        function validarTimer() {
+        function timerValido() {
             let timer = document.getElementById("tempo").value;
-            return !(timer < 10 || timer > 1200);
+            return (timer >= 10 && timer <= 1200);
         }
 
-        function validarCodigo() {
+        function codigoValido() {
+            return document.getElementById("codigo").value.trim().length > 0
+        }
+
+        function ajustarCodigo() {
             const allowedChars = "0123456789ABCDEFGHIJKLMNOPQRSTUVXWYZ;,: \n";
 
             let codigo = document.getElementById("codigo").value.toUpperCase();
@@ -101,39 +105,45 @@
         }
 
         async function enviarCodigo() {
+            var btn = document.getElementById('botao');
             try {
-                if (!validarINs() || !validarTimer()) {
-                    alert("Verifique se todas as portas IN e o timer.");
-                    return;
+                if (!INsValidas() || !timerValido() || !codigoValido()) {
+                    alert("Verifique se todos os campos estão preenchidos de acordo.");
                 }
-                const url = "http://SERVER_IP_AD:8080";
-                const codigo = validarCodigo();
-                const in0 = document.getElementById("IN0").value;
-                const in1 = document.getElementById("IN1").value;
-                const in2 = document.getElementById("IN2").value;
-                const in3 = document.getElementById("IN3").value;
-                const timer = document.getElementById("tempo").value;
+                else {
+                    btn.setAttribute('disabled', '');
+                    const url = "http://SERVER_IP_AD:8080";
+                    const codigo = ajustarCodigo();
+                    const in0 = document.getElementById("IN0").value;
+                    const in1 = document.getElementById("IN1").value;
+                    const in2 = document.getElementById("IN2").value;
+                    const in3 = document.getElementById("IN3").value;
+                    const timer = document.getElementById("tempo").value;
 
-                const response = await fetch(url, {
-                    method: "POST",
-                    body: new URLSearchParams({ timer, in0, in1, in2, in3, codigo }),
-                });
+                    const response = await fetch(url, {
+                        method: "POST",
+                        body: new URLSearchParams({ timer, in0, in1, in2, in3, codigo }),
+                    });
 
-                if (response.ok) {
-                    const text = await response.text();
-                    alert(text);
-                } else {
-                    if (response.status === 429) {
-                        alert("ERRO 429: O servidor está ocupado.");
-                    } else {
+                    if (response.ok) {
                         const text = await response.text();
-                        alert(`ERRO ${response.status}: ${text}`);
+                        alert(text);
+                    } else {
+                        if (response.status === 429) {
+                            alert("ERRO 429: O servidor está ocupado.");
+                        } else {
+                            const text = await response.text();
+                            alert(`ERRO ${response.status}: ${text}`);
+                        }
                     }
                 }
             } catch (error) {
                 alert(`Erro: ${error.message}`);
             }
+
+            btn.removeAttribute('disabled', '');
         }
     </script>
 </body>
+
 </html>
