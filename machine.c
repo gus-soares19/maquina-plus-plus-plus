@@ -2,12 +2,17 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
 #define REGS_SIZE 5
 #define IO_SIZE 4
 #define CALL_STACK_SIZE 4
 #define A_ASCII 65
 #define MAX_INT 256
 #define MIN_INT 0
+#define MIN_PCF_ADDR 20
+#define I2C_BUS_STR "0"
 
 typedef struct LabelNode
 {
@@ -344,11 +349,16 @@ void movR(char *from, char *to, Machine *machine)
 void movO(char *from, char *out, Machine *machine)
 {
     int outPos;
-    sscanf(out, "OUT%d", &outPos);
-    int regFromPos = from[0] - A_ASCII;
-     machine->outputs[outPos] = machine->regs[regFromPos];
+    char *command = "i2c set -b 0 -a";
+    char buffer[100];
 
-    printf("%s: %X\n", out, machine->regs[regFromPos]);
+    sscanf(out, "OUT%d", &outPos);
+    int regPos = from[0] - A_ASCII;
+    machine->outputs[outPos] = machine->regs[regPos];
+
+    sprintf(buffer, "%s 0x%d 0x%X", command, (MIN_PCF_ADDR + outPos), machine->outputs[outPos]);
+
+    system(buffer);
 }
 
 void movI(char *in, char *to, Machine *machine)
@@ -615,6 +625,7 @@ HttpResponse *execute(Machine *machine)
         }
 
         current = current->next;
+        sleep(0.1);
     }
 
     addOUTsToMessage(machine);

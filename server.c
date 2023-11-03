@@ -10,7 +10,7 @@
 #include <unistd.h>
 
 #define PORT 8080
-#define IP "192.168.1.15"
+#define IP "192.168.1.17"
 
 char *lerArquivoHTML(const char *nomeArquivo)
 {
@@ -106,7 +106,7 @@ char *replaceTextByIP(char *input, const char *target, const char *replacement)
 int main(int argc, char *argv[]) 
 {
     int server_fd, new_socket, valread;
-     struct sockaddr_in address;
+    struct sockaddr_in address;
     int opt = 1;
     int addrlen = sizeof(address);
     char buffer[2048] = {0};
