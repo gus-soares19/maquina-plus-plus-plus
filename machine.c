@@ -106,6 +106,13 @@ void freeMachine(Machine *machine)
     machine = NULL;
 }
 
+void delay(void)
+{
+    clock_t start_time = clock();
+    clock_t delay = 0.07 * CLOCKS_PER_SEC;
+    while (clock() < start_time + delay) {}
+}
+
 void addOUTsToMessage(Machine *machine){
     char value[10];
     strcat(machine->machineError, "\nOUT0:");
@@ -625,7 +632,8 @@ HttpResponse *execute(Machine *machine)
         }
 
         current = current->next;
-        sleep(0.1);
+        
+        delay();
     }
 
     addOUTsToMessage(machine);
