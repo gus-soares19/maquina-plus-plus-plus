@@ -22,9 +22,7 @@ const char *obterIP(int socket, struct sockaddr_in address, socklen_t addrlen)
 
     const char *ip_str = inet_ntop(AF_INET, &(address.sin_addr), buffer, INET_ADDRSTRLEN);
 
-    if (ip_str != NULL) {
-        printf("Endereço IP do computador: %s\n", ip_str);
-    } else {
+    if (ip_str == NULL) {
         perror("inet_ntop");
         close(socket);
         exit(EXIT_FAILURE);
@@ -216,18 +214,19 @@ int main(int argc, char *argv[])
 
                 // trata a requisição POST
                 char *timer = getValue(strstr(buffer, "timer="), "timer=");
+                char *pausa = getValue(strstr(buffer, "pausa="), "pausa=");
                 char *code = getValue(strstr(buffer, "codigo="), "codigo=");
                 char *in0 = getValue(strstr(buffer, "in0="), "in0=");
                 char *in1 = getValue(strstr(buffer, "in1="), "in1=");
                 char *in2 = getValue(strstr(buffer, "in2="), "in2=");
                 char *in3 = getValue(strstr(buffer, "in3="), "in3=");
 
-                if (code != NULL && in0 != NULL && in1 != NULL && in2 != NULL && in3 != NULL && timer != NULL)
+                if (code != NULL && in0 != NULL && in1 != NULL && in2 != NULL && in3 != NULL && timer != NULL && pausa !=NULL)
                 {
                     Parser *parser = (Parser *)malloc(sizeof(Parser));
                     initializeParser(parser);
 
-                    HttpResponse *httpResponse = parse(parser, code, in0, in1, in2, in3, timer);
+                    HttpResponse *httpResponse = parse(parser, code, in0, in1, in2, in3, timer, pausa);
 
                     char *text = httpResponseToText(httpResponse);
 

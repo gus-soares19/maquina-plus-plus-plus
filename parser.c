@@ -194,12 +194,13 @@ void freeParser(Parser *parser)
     parser = NULL;
 }
 
-HttpResponse *parse(Parser *parser, char *code, char *in0, char *in1, char *in2, char *in3, char *timer)
+HttpResponse *parse(Parser *parser, char *code, char *in0, char *in1, char *in2, char *in3, char *timer, char *pausa)
 {
     replace(code);
     setInput(&(parser->_tokenizer), code);
     setInputs(&(parser->_machine), in0, in1, in2, in3);
     setTimer(&(parser->_machine), atoi(timer));
+    setIntervaloInstrucao(&(parser->_machine), strtod(pausa, NULL));
 
     parser->_currentToken = getNextToken(&(parser->_tokenizer));
 

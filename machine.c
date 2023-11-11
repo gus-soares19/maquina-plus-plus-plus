@@ -33,6 +33,7 @@ typedef struct
     bool flagC;
     bool flagZ;
     int timer;
+    double intervalo;
     char *machineError;
     char *errorState;
     int errorCode;
@@ -77,6 +78,11 @@ void setTimer(Machine *machine, int timer)
     machine->timer = timer;
 }
 
+void setIntervaloInstrucao(Machine *machine, double intervalo)
+{
+    machine->intervalo = intervalo;
+}
+
 void freeLabelNodes(LabelNode *head)
 {
     LabelNode *current = head;
@@ -106,10 +112,10 @@ void freeMachine(Machine *machine)
     machine = NULL;
 }
 
-void delay(void)
+void delay(Machine *machine)
 {
     clock_t start_time = clock();
-    clock_t delay = 0.07 * CLOCKS_PER_SEC;
+    clock_t delay = machine->intervalo * CLOCKS_PER_SEC;
     while (clock() < start_time + delay) {}
 }
 
@@ -633,7 +639,7 @@ HttpResponse *execute(Machine *machine)
 
         current = current->next;
         
-        delay();
+        delay(machine);
     }
 
     addOUTsToMessage(machine);
