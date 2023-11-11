@@ -10,7 +10,28 @@
 #include <unistd.h>
 
 #define PORT 8080
-#define IP "192.168.1.17"
+
+const char *obterIP(int socket, struct sockaddr_in address, socklen_t addrlen)
+{
+    static char buffer[INET_ADDRSTRLEN];
+    if (getsockname(socket, (struct sockaddr*)&address, &addrlen) == -1) {
+        perror("Erro ao obter informações locais");
+        close(socket);
+        exit(EXIT_FAILURE);
+    }
+
+    const char *ip_str = inet_ntop(AF_INET, &(address.sin_addr), buffer, INET_ADDRSTRLEN);
+
+    if (ip_str != NULL) {
+        printf("Endereço IP do computador: %s\n", ip_str);
+    } else {
+        perror("inet_ntop");
+        close(socket);
+        exit(EXIT_FAILURE);
+    }
+
+    return ip_str;
+}
 
 char *lerArquivoHTML(const char *nomeArquivo)
 {
@@ -108,7 +129,7 @@ int main(int argc, char *argv[])
     int server_fd, new_socket, valread;
     struct sockaddr_in address;
     int opt = 1;
-    int addrlen = sizeof(address);
+    socklen_t addrlen = sizeof(address);
     char buffer[2048] = {0};
     char response[4096] = {0};
     const char *nomeArquivo = "/data/client.html";
@@ -130,11 +151,7 @@ int main(int argc, char *argv[])
 
     address.sin_family = AF_INET;
     address.sin_port = htons(PORT);
-
-    if (inet_pton(AF_INET, IP, &(address.sin_addr)) < 1) {
-        perror("Erro ao converter endereço IP.");
-        exit(EXIT_FAILURE);
-    }
+    address.sin_addr.s_addr = INADDR_ANY;
     
     if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0)
     {
@@ -148,7 +165,7 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    printf("aguardando requisicoes no endereco %s:%d...\n", inet_ntoa(address.sin_addr), PORT);
+    printf("aguardando requisicoes na porta %d...\n", PORT);
     // aguarda por requisições
     while (1)
     {
@@ -170,7 +187,7 @@ int main(int argc, char *argv[])
 
                 if (conteudo != NULL)
                 {                    
-                    char *html = replaceTextByIP(conteudo, "SERVER_IP_AD", IP);
+                    char *html = replaceTextByIP(conteudo, "SERVER_IP_AD", obterIP(new_socket, address, addrlen));
                     sprintf(response, "%s%s", "HTTP/1.1 200 OK\r\n"
                                               "Content-Type: text/html; charset=utf-8\r\n"
                                               "\r\n",
