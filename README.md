@@ -25,7 +25,7 @@ responsável por analisar lexica, sintatica e semanticamente o código, poderá 
 
 A interface possui 4 parâmetros importantes para a aplicação:
 1. campo de texto para inserção de código assembly;
-2. campos de texto enumeradas de IN0 até IN3 representando as portas INPUT da M3+;
+2. campos de texto enumerados de IN0 até IN3 representando as portas INPUT da M3+;
 3. campo numérico para informar o tempo máximo de execução da aplicação em segundos;
 4. campo numérico para informar o intervalo entre cada instrução também em segundos.
 
@@ -53,6 +53,11 @@ SCL respectivamente, passam pelos resistores R1 e R2 de 10K Ohms para reduzir a 
 15 e 14 de cada PCF8574P. O quadrado verde agrupa os dispositivos I2C, os pinos P0 até P7 estão conectados no lado
 positivo de cada LED, destacados no quadrado roxo, e o lado negativo se conecta ao GND do ESP32 por meio de resistores
 de 330 Ohms.
+
+___
+## Configuração do NuttX
+
+Algumas configurações são necessárias no NuttX para que seja possível rodar a aplicação. [Nesse arquivo](config/NuttX.pdf) são listados todos os passos.
 
 ___
 ## Características do assembly
