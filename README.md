@@ -57,7 +57,7 @@ de 330 Ohms.
 ___
 ## Configuração do NuttX
 
-Algumas configurações são necessárias no NuttX para que seja possível rodar a aplicação. [Nesse arquivo](config/NuttX.pdf) são listados todos os passos.
+Algumas configurações são necessárias no NuttX para que seja possível rodar a aplicação. [Nesse arquivo](config/NuttX.pdf) são listados todos os passos e [aqui](config/defconfig) o arquivo de configuração do NuttX.
 
 ___
 ## Características do assembly
