@@ -1,4 +1,4 @@
-server.c.home.gustavo.nuttxspace.apps.examples.m_three_plus.o: server.c \
+server.c.home.gustavo.nuttxspace.apps.examples.m3p.o: server.c \
  /home/gustavo/nuttxspace/nuttx/include/stdio.h \
  /home/gustavo/nuttxspace/nuttx/include/nuttx/config.h \
  /home/gustavo/nuttxspace/nuttx/include/sys/types.h \
@@ -68,6 +68,13 @@ server.c.home.gustavo.nuttxspace.apps.examples.m_three_plus.o: server.c \
  /home/gustavo/nuttxspace/nuttx/include/langinfo.h \
  /home/gustavo/nuttxspace/nuttx/include/nl_types.h \
  /home/gustavo/nuttxspace/nuttx/include/locale.h hashMap.c hashMapList.c \
- machine.c memory.c
+ machine.c memory.c /home/gustavo/nuttxspace/nuttx/include/fcntl.h \
+ /home/gustavo/nuttxspace/nuttx/include/sys/ioctl.h \
+ /home/gustavo/nuttxspace/nuttx/include/nuttx/fs/ioctl.h \
+ /home/gustavo/nuttxspace/nuttx/include/nuttx/serial/tioctl.h \
+ /home/gustavo/nuttxspace/nuttx/include/nuttx/net/ioctl.h \
+ /home/gustavo/nuttxspace/nuttx/include/nuttx/wireless/wireless.h \
+ /home/gustavo/nuttxspace/nuttx/include/net/if.h \
+ /home/gustavo/nuttxspace/nuttx/include/nuttx/wireless/ioctl.h
 # No files specified for dependency generation
 # No files specified for dependency generation

@@ -1,23 +1,23 @@
 # M+++ configuration file
 
-config EXAMPLES_M_THREE_PLUS
-	bool "mthreeplus"
+config EXAMPLES_M3P
+	bool "M3P"
 	default y
 	---help---
-		Enable the M_THREE_PLUS example
+		Enable the M3P
 
-if EXAMPLES_M_THREE_PLUS
+if EXAMPLES_M3P
 
-config EXAMPLES_M_THREE_PLUS_PROGNAME
+config EXAMPLES_M3P_PROGNAME
 	string "Program name"
-	default "mthreeplus"
+	default "m3p"
 
-config EXAMPLES_M_THREE_PLUS_PRIORITY
+config EXAMPLES_M3P_PRIORITY
 	int "task priority"
 	default 100
 
-config EXAMPLES_M_THREE_PLUS_STACKSIZE
+config EXAMPLES_M3P_STACKSIZE
 	int "stack size"
-	default DEFAULT_TASK_STACKSIZE
+	default 8000
 
 endif

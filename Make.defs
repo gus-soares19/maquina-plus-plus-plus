@@ -1,5 +1,5 @@
 ############################################################################
-# apps/examples/m_three_plus/Make.defs
+# apps/examples/m3p/Make.defs
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -18,6 +18,6 @@
 #
 ############################################################################
 
-ifneq ($(CONFIG_EXAMPLES_M_THREE_PLUS),)
-CONFIGURED_APPS += $(APPDIR)/examples/m_three_plus
+ifneq ($(CONFIG_EXAMPLES_M3P),)
+CONFIGURED_APPS += $(APPDIR)/examples/m3p
 endif
