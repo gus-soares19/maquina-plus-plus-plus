@@ -1,3 +1,5 @@
+#include <nuttx/config.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,11 +13,51 @@
 
 #define PORT 8080
 
+bool conectarInternet(void)
+{
+  char buffer[100];
+  char *psk_command = "wapi psk wlan0";
+  char *essid_command = "wapi essid wlan0";
+
+  printf("tentando conectar na internet...\n");
+
+  sprintf(buffer, "%s \"%s\" %d", psk_command, CONFIG_EXAMPLES_M3P_WIFI_PSK, 1);
+  printf("%s\n", buffer);
+  system(buffer);
+
+  strcpy(buffer, "");
+
+  sprintf(buffer, "%s \"%s\" %d", essid_command, CONFIG_EXAMPLES_M3P_WIFI_ESSID, 1);
+  printf("%s\n", buffer);
+  if(system(buffer) != 0)
+  {
+    perror("senha ou nome incorretos.\n");
+    return false;
+  }
+
+  printf("renew wlan0\n");
+  if(system("renew wlan0") != 0)
+  {
+    perror("nao foi possivel conectar.\n");
+    return false;
+  }
+
+  printf("ifconfig\n");
+  if(system("ifconfig") != 0)
+  {
+    perror("nao foi possivel obter um IP.\n");
+    return false;
+  }
+
+  printf("conexao com a internet bem sucedida.\n");
+  return true;
+}
+
 const char *obterIP(int socket, struct sockaddr_in address, socklen_t addrlen)
 {
     static char buffer[INET_ADDRSTRLEN];
     if (getsockname(socket, (struct sockaddr*)&address, &addrlen) == -1) {
-        perror("Erro ao obter informações locais");
+        perror("Erro ao obter informações locais.");
         close(socket);
         exit(EXIT_FAILURE);
     }
@@ -23,7 +65,7 @@ const char *obterIP(int socket, struct sockaddr_in address, socklen_t addrlen)
     const char *ip_str = inet_ntop(AF_INET, &(address.sin_addr), buffer, INET_ADDRSTRLEN);
 
     if (ip_str == NULL) {
-        perror("inet_ntop");
+        perror("inet_ntop.");
         close(socket);
         exit(EXIT_FAILURE);
     }
@@ -36,7 +78,7 @@ char *lerArquivoHTML(const char *nomeArquivo)
     FILE *arquivo = fopen(nomeArquivo, "r");
     if (arquivo == NULL)
     {
-        fprintf(stderr, "Erro ao abrir o arquivo %s\n", nomeArquivo);
+        fprintf(stderr, "Erro ao abrir o arquivo %s.\n", nomeArquivo);
         return NULL;
     }
 
@@ -49,7 +91,7 @@ char *lerArquivoHTML(const char *nomeArquivo)
     char *conteudo = (char *)malloc(sizeof(char) * (tamanho + 1));
     if (conteudo == NULL)
     {
-        fprintf(stderr, "Erro ao alocar memória para o conteúdo do arquivo\n");
+        fprintf(stderr, "Erro ao alocar memória para o conteúdo do arquivo.\n");
         fclose(arquivo);
         return NULL;
     }
@@ -58,7 +100,7 @@ char *lerArquivoHTML(const char *nomeArquivo)
     size_t lidos = fread(conteudo, sizeof(char), tamanho, arquivo);
     if (lidos != tamanho)
     {
-        fprintf(stderr, "Erro ao ler o conteúdo do arquivo\n");
+        fprintf(stderr, "Erro ao ler o conteúdo do arquivo.\n");
         fclose(arquivo);
         free(conteudo);
         return NULL;
@@ -133,17 +175,22 @@ int main(int argc, char *argv[])
     const char *nomeArquivo = "/data/client.html";
     bool executing = false;
 
+    if(!conectarInternet())
+    {
+        exit(EXIT_FAILURE);
+    }
+
     // Cria um descritor do socket
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
     {
-        perror("socket falhou");
+        perror("socket falhou.");
         exit(EXIT_FAILURE);
     }
 
     // adiciona o socket na porta informada
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)))
     {
-        perror("setsockopt");
+        perror("setsockopt.");
         exit(EXIT_FAILURE);
     }
 
@@ -153,13 +200,13 @@ int main(int argc, char *argv[])
     
     if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0)
     {
-        perror("bind falhou");
+        perror("bind falhou.");
         exit(EXIT_FAILURE);
     }
 
     if (listen(server_fd, 3) < 0)
     {
-        perror("listen");
+        perror("listen.");
         exit(EXIT_FAILURE);
     }
 
@@ -169,7 +216,7 @@ int main(int argc, char *argv[])
     {
         if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen)) < 0)
         {
-            perror("accept");
+            perror("accept.");
             exit(EXIT_FAILURE);
         }
 
@@ -177,6 +224,8 @@ int main(int argc, char *argv[])
 
         if (valread > 0)
         {
+            printf("requisicao recebida.\n");
+
             // verifica se a requisição é do tipo GET
             if (strncmp(buffer, "GET", 3) == 0)
             {
