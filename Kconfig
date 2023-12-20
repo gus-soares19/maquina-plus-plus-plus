@@ -12,6 +12,18 @@ config EXAMPLES_M3P_PROGNAME
 	string "Program name"
 	default "m3p"
 
+config EXAMPLES_M3P_WIFI_ESSID
+	string "network essid"
+	default "M3P_WiFi"
+
+config EXAMPLES_M3P_WIFI_PSK
+	string "network passkey"
+	default "rlkp5309"
+
+config EXAMPLES_M3P_I2C_BUS
+	int "I2C BUS port"
+	default 0
+
 config EXAMPLES_M3P_PRIORITY
 	int "task priority"
 	default 100
