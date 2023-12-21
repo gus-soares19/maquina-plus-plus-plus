@@ -171,7 +171,7 @@ int main(int argc, char *argv[])
     int opt = 1;
     socklen_t addrlen = sizeof(address);
     char buffer[2048] = {0};
-    char response[4096] = {0};
+    char response[3072] = {0};
     const char *nomeArquivo = "/data/client.html";
     bool executing = false;
 
@@ -265,17 +265,13 @@ int main(int argc, char *argv[])
                 char *timer = getValue(strstr(buffer, "timer="), "timer=");
                 char *pausa = getValue(strstr(buffer, "pausa="), "pausa=");
                 char *code = getValue(strstr(buffer, "codigo="), "codigo=");
-                char *in0 = getValue(strstr(buffer, "in0="), "in0=");
-                char *in1 = getValue(strstr(buffer, "in1="), "in1=");
-                char *in2 = getValue(strstr(buffer, "in2="), "in2=");
-                char *in3 = getValue(strstr(buffer, "in3="), "in3=");
 
-                if (code != NULL && in0 != NULL && in1 != NULL && in2 != NULL && in3 != NULL && timer != NULL && pausa !=NULL)
+                if (code != NULL && timer != NULL && pausa !=NULL)
                 {
                     Parser *parser = (Parser *)malloc(sizeof(Parser));
                     initializeParser(parser);
 
-                    HttpResponse *httpResponse = parse(parser, code, in0, in1, in2, in3, timer, pausa);
+                    HttpResponse *httpResponse = parse(parser, code, timer, pausa);
 
                     char *text = httpResponseToText(httpResponse);
 

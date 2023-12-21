@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
+#include <stdio.h>
 
 #define REGS_SIZE 5
 #define IO_SIZE 4
@@ -64,14 +65,6 @@ void initializeMachine(Machine *machine)
 
     strcpy(machine->machineError, "");
     strcpy(machine->errorState, "");
-}
-
-void setInputs(Machine *machine, char *in0, char *in1, char *in2, char *in3)
-{
-    machine->inputs[0] = strtol(in0, NULL, 16);
-    machine->inputs[1] = strtol(in1, NULL, 16);
-    machine->inputs[2] = strtol(in2, NULL, 16);
-    machine->inputs[3] = strtol(in3, NULL, 16);
 }
 
 void setTimer(Machine *machine, int timer)
@@ -370,18 +363,49 @@ void movO(char *from, char *out, Machine *machine)
     int regPos = from[0] - A_ASCII;
 
     sprintf(buffer, "%s %d -a 0x%d 0x%X", command, CONFIG_EXAMPLES_M3P_I2C_BUS, (MIN_OUT_ADDR + outPos), machine->outputs[outPos]);
-    system(buffer);
-
-    machine->outputs[outPos] = machine->regs[regPos];
+    
+    if(system(buffer) == 0)
+    {
+        machine->outputs[outPos] = machine->regs[regPos];
+    }
+    else
+    {
+        printf("Nao foi possivel ler a porta OUT%d.\n", outPos);
+    }
 }
 
 void movI(char *in, char *to, Machine *machine)
 {
-    int inPos;
-    sscanf(in, "IN%d", &inPos);
-    int regToPos = to[0] - A_ASCII;
+    int inPos, value;
+    FILE *fp;
+    char *command = "i2c get -b 0 -a";
+    char buffer[100], response[100];
 
-    machine->regs[regToPos] = machine->inputs[inPos];
+    sscanf(in, "IN%d", &inPos);
+    int regPos = to[0] - A_ASCII;
+
+    sprintf(buffer, "%s 0x%d", command, (MIN_IN_ADDR + inPos));
+
+    fp = popen(buffer, "r");
+    if (fp == NULL) 
+    {
+        printf("Nao foi possivel ler a porta IN%d.\n", inPos);
+    }
+    else
+    {
+        while (fgets(response, sizeof(response), fp) != NULL) 
+        {
+         if(sscanf(response, "READ %*s %*s %*s %*s %*s %*s Value: %d", &value) == 1)
+         {
+            machine->regs[regPos] = machine->inputs[inPos] = (int) value;
+         }
+         else
+         {
+            printf("Nao foi possivel ler a porta IN%d.\n", inPos);
+         }
+        }
+        pclose(fp);
+    }
 }
 
 HttpResponse *execute(Machine *machine)
