@@ -137,32 +137,6 @@ bool step(Parser *parser)
     }
 }
 
-void replace(char *str)
-{
-    if (str == NULL)
-    {
-        return;
-    }
-
-    char find[5] = {'*', '+', '_', '-', '.'};
-    char replace[5] = {':', ' ', '\n', ',', ';'};
-
-    int length = strlen(str);
-    int findSize = sizeof(find) / sizeof(find[0]);
-
-    for (int i = 0; i < length; i++)
-    {
-        for (int j = 0; j < findSize; j++)
-        {
-            if (str[i] == find[j])
-            {
-                str[i] = replace[j];
-                break;
-            }
-        }
-    }
-}
-
 void initializeParser(Parser *parser)
 {
     initializeTokenizer(&(parser->_tokenizer));
@@ -194,12 +168,11 @@ void freeParser(Parser *parser)
     parser = NULL;
 }
 
-HttpResponse *parse(Parser *parser, char *code, char *timer, char *pausa)
+HttpResponse *parse(Parser *parser, char *code, char *timer, char *delay)
 {
-    replace(code);
     setInput(&(parser->_tokenizer), code);
     setTimer(&(parser->_machine), atoi(timer));
-    setIntervaloInstrucao(&(parser->_machine), strtod(pausa, NULL));
+    setDelay(&(parser->_machine), strtod(delay, NULL));
 
     parser->_currentToken = getNextToken(&(parser->_tokenizer));
 

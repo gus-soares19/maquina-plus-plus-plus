@@ -1,16 +1,34 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="UTF-8">
     <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
     <title>M+++</title>
     <style>
-        #titulo {display:flex;justify-content:center;}
-        #params {display:flex;}
-        .params,.timer {margin:5px 5px;}
-        textarea {width:100%;height:500px;font-size:16px;resize:none;}
+        #titulo {
+            display: flex;
+            justify-content: center;
+        }
+
+        #params {
+            display: flex;
+        }
+
+        .params,
+        .timer {
+            margin: 5px 5px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 500px;
+            font-size: 16px;
+            resize: none;
+        }
     </style>
 </head>
+
 <body>
     <div id="titulo">
         <h1>Escreva um código no assembly da M+++ para ser interpretado</h1>
@@ -28,7 +46,7 @@
                     <input type="number" value="0" min="0" max="1" id="pausa">
                 </div>
             </div>
-            <button id="botao" onclick="enviarCodigo()">Enviar</button>
+            <button id="botao">Enviar</button>
         </div>
     </div>
     <script>
@@ -41,45 +59,48 @@
             return document.getElementById("codigo").value.trim().length > 0
         }
         function ajustarCodigo() {
-            const allowedChars = "0123456789ABCDEFGHIJKLMNOPQRSTUVXWYZ;,: \n";
+            const allowedChars = "0123456789ABCDEFGHIJKLMNOPQRSTUVXWYZ#;,: \n";
             let codigo = document.getElementById("codigo").value.toUpperCase();
             codigo = codigo.replace(/\/\/.*/g, '').trim().split('').filter(char => allowedChars.includes(char)).join('');
-            return codigo.replaceAll("\n", "_").replaceAll(",", "-").replaceAll(";", ".").replaceAll(":", "*").toUpperCase();
+            return codigo.toUpperCase();
         }
 
-        async function enviarCodigo() {
-            var btn = document.getElementById('botao');
-            try {
-                if (!timerValido() || !codigoValido()) {
-                    alert("Verifique se todos os campos estão preenchidos de acordo.");
-                }
-                else {
-                    btn.setAttribute('disabled', '');
-                    const url = "http://SERVER_IP_AD:8080";
-                    const codigo = ajustarCodigo();
-                    const timer = document.getElementById("tempo").value;
-                    const pausa = document.getElementById("pausa").value;
-                    const response = await fetch(url, {
-                        method: "POST",
-                        body: new URLSearchParams({ timer, codigo, pausa }),
-                    });
-                    if (response.ok) {
-                        const text = await response.text();
-                        alert(text);
-                    } else {
-                        if (response.status === 429) {
-                            alert("ERRO 429: O servidor está ocupado.");
-                        } else {
-                            const text = await response.text();
-                            alert(`ERRO ${response.status}: ${text}`);
-                        }
+        document.addEventListener('DOMContentLoaded', function () {
+            document.getElementById('botao').addEventListener('click', function () {
+                var btn = document.getElementById('botao');
+                try {
+                    if (!timerValido() || !codigoValido()) {
+                        alert("Verifique se todos os campos estão preenchidos de acordo.");
                     }
+                    else {
+                        btn.setAttribute('disabled', '');
+                        const url = "http://SERVER_IP_AD:8080";
+                        var data = {
+                            code: ajustarCodigo(),
+                            timer: document.getElementById("tempo").value,
+                            delay: document.getElementById("pausa").value
+                        };
+                        fetch(url, {
+                            method: "POST",
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(data)
+                        }).then(response => response.text())
+                            .then(data => {
+                                alert(`Resposta do servidor: ${data}`);
+                            })
+                            .catch(error => {
+                                alert(`Erro: ${error}`);
+                            });
+                    }
+                } catch (error) {
+                    alert(`Erro: ${error.message}`);
                 }
-            } catch (error) {
-                alert(`Erro: ${error.message}`);
-            }
-            btn.removeAttribute('disabled', '');
-        }
+                btn.removeAttribute('disabled', '');
+            });
+        });
     </script>
 </body>
+
 </html>

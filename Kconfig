@@ -3,7 +3,7 @@
 config EXAMPLES_M3P
 	bool "M3P"
 	default y
-	depends on SYSTEM_POPEN
+	depends on SYSTEM_POPEN && NETUTILS_CJSON
 	---help---
 		Enable the M3P
 

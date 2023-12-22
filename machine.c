@@ -35,7 +35,7 @@ typedef struct
     bool flagC;
     bool flagZ;
     int timer;
-    double intervalo;
+    double delay;
     char *machineError;
     char *errorState;
     int errorCode;
@@ -72,9 +72,9 @@ void setTimer(Machine *machine, int timer)
     machine->timer = timer;
 }
 
-void setIntervaloInstrucao(Machine *machine, double intervalo)
+void setDelay(Machine *machine, double delay)
 {
-    machine->intervalo = intervalo;
+    machine->delay = delay;
 }
 
 void freeLabelNodes(LabelNode *head)
@@ -100,7 +100,7 @@ void freeMachine(Machine *machine)
 
     free(machine->machineError);
     free(machine->errorState);
-    
+
     machine->machineError = NULL;
     machine->errorState = NULL;
     machine = NULL;
@@ -109,11 +109,14 @@ void freeMachine(Machine *machine)
 void delay(Machine *machine)
 {
     clock_t start_time = clock();
-    clock_t delay = machine->intervalo * CLOCKS_PER_SEC;
-    while (clock() < start_time + delay) {}
+    clock_t delay = machine->delay * CLOCKS_PER_SEC;
+    while (clock() < start_time + delay)
+    {
+    }
 }
 
-void addOUTsToMessage(Machine *machine){
+void addOUTsToMessage(Machine *machine)
+{
     char value[10];
     strcat(machine->machineError, "\nOUT0:");
     sprintf(value, "%X", machine->outputs[0]);
@@ -363,8 +366,8 @@ void movO(char *from, char *out, Machine *machine)
     int regPos = from[0] - A_ASCII;
 
     sprintf(buffer, "%s %d -a 0x%d 0x%X", command, CONFIG_EXAMPLES_M3P_I2C_BUS, (MIN_OUT_ADDR + outPos), machine->outputs[outPos]);
-    
-    if(system(buffer) == 0)
+
+    if (system(buffer) == 0)
     {
         machine->outputs[outPos] = machine->regs[regPos];
     }
@@ -387,22 +390,22 @@ void movI(char *in, char *to, Machine *machine)
     sprintf(buffer, "%s 0x%d", command, (MIN_IN_ADDR + inPos));
 
     fp = popen(buffer, "r");
-    if (fp == NULL) 
+    if (fp == NULL)
     {
         printf("Nao foi possivel ler a porta IN%d.\n", inPos);
     }
     else
     {
-        while (fgets(response, sizeof(response), fp) != NULL) 
+        while (fgets(response, sizeof(response), fp) != NULL)
         {
-         if(sscanf(response, "READ %*s %*s %*s %*s %*s %*s Value: %d", &value) == 1)
-         {
-            machine->regs[regPos] = machine->inputs[inPos] = (int) value;
-         }
-         else
-         {
-            printf("Nao foi possivel ler a porta IN%d.\n", inPos);
-         }
+            if (sscanf(response, "READ %*s %*s %*s %*s %*s %*s Value: %d", &value) == 1)
+            {
+                machine->regs[regPos] = machine->inputs[inPos] = (int)value;
+            }
+            else
+            {
+                printf("Nao foi possivel ler a porta IN%d.\n", inPos);
+            }
         }
         pclose(fp);
     }
@@ -663,7 +666,7 @@ HttpResponse *execute(Machine *machine)
         }
 
         current = current->next;
-        
+
         delay(machine);
     }
 

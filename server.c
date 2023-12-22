@@ -10,53 +10,55 @@
 #include "parser.c"
 
 #include <unistd.h>
+#include "netutils/cJSON.h"
 
 #define PORT 8080
 
 bool conectarInternet(void)
 {
-  char buffer[100];
-  char *psk_command = "wapi psk wlan0";
-  char *essid_command = "wapi essid wlan0";
+    char buffer[100];
+    char *psk_command = "wapi psk wlan0";
+    char *essid_command = "wapi essid wlan0";
 
-  printf("tentando conectar na internet...\n");
+    printf("tentando conectar na internet...\n");
 
-  sprintf(buffer, "%s \"%s\" %d", psk_command, CONFIG_EXAMPLES_M3P_WIFI_PSK, 1);
-  printf("%s\n", buffer);
-  system(buffer);
+    sprintf(buffer, "%s \"%s\" %d", psk_command, CONFIG_EXAMPLES_M3P_WIFI_PSK, 1);
+    printf("%s\n", buffer);
+    system(buffer);
 
-  strcpy(buffer, "");
+    strcpy(buffer, "");
 
-  sprintf(buffer, "%s \"%s\" %d", essid_command, CONFIG_EXAMPLES_M3P_WIFI_ESSID, 1);
-  printf("%s\n", buffer);
-  if(system(buffer) != 0)
-  {
-    perror("senha ou nome incorretos.\n");
-    return false;
-  }
+    sprintf(buffer, "%s \"%s\" %d", essid_command, CONFIG_EXAMPLES_M3P_WIFI_ESSID, 1);
+    printf("%s\n", buffer);
+    if (system(buffer) != 0)
+    {
+        perror("senha ou nome incorretos.\n");
+        return false;
+    }
 
-  printf("renew wlan0\n");
-  if(system("renew wlan0") != 0)
-  {
-    perror("nao foi possivel conectar.\n");
-    return false;
-  }
+    printf("renew wlan0\n");
+    if (system("renew wlan0") != 0)
+    {
+        perror("nao foi possivel conectar.\n");
+        return false;
+    }
 
-  printf("ifconfig\n");
-  if(system("ifconfig") != 0)
-  {
-    perror("nao foi possivel obter um IP.\n");
-    return false;
-  }
+    printf("ifconfig\n");
+    if (system("ifconfig") != 0)
+    {
+        perror("nao foi possivel obter um IP.\n");
+        return false;
+    }
 
-  printf("conexao com a internet bem sucedida.\n");
-  return true;
+    printf("conexao com a internet bem sucedida.\n");
+    return true;
 }
 
 const char *obterIP(int socket, struct sockaddr_in address, socklen_t addrlen)
 {
     static char buffer[INET_ADDRSTRLEN];
-    if (getsockname(socket, (struct sockaddr*)&address, &addrlen) == -1) {
+    if (getsockname(socket, (struct sockaddr *)&address, &addrlen) == -1)
+    {
         perror("Erro ao obter informações locais.");
         close(socket);
         exit(EXIT_FAILURE);
@@ -64,7 +66,8 @@ const char *obterIP(int socket, struct sockaddr_in address, socklen_t addrlen)
 
     const char *ip_str = inet_ntop(AF_INET, &(address.sin_addr), buffer, INET_ADDRSTRLEN);
 
-    if (ip_str == NULL) {
+    if (ip_str == NULL)
+    {
         perror("inet_ntop.");
         close(socket);
         exit(EXIT_FAILURE);
@@ -114,31 +117,12 @@ char *lerArquivoHTML(const char *nomeArquivo)
     return conteudo;
 }
 
-char *getValue(char *text, char *var)
-{
-    char *str = strchr(strstr(text, var), '&');
-
-    if (str != NULL)
-    {
-        size_t tamanho = str - text;
-        char *destino = (char *)malloc((tamanho + 1) * sizeof(char));
-
-        if (destino != NULL)
-        {
-            strncpy(destino, text, tamanho);
-            destino[tamanho] = '\0'; // Adiciona o caractere nulo para terminar a string destino
-            return destino + strlen(var);
-        }
-    }
-
-    return text + strlen(var);
-}
-
 char *replaceTextByIP(char *input, const char *target, const char *replacement)
 {
     char *position = strstr(input, target);
 
-    if (position == NULL) {
+    if (position == NULL)
+    {
         return strdup(input);
     }
 
@@ -149,14 +133,15 @@ char *replaceTextByIP(char *input, const char *target, const char *replacement)
 
     char *result = (char *)malloc(newSize + 1);
 
-    if (result == NULL) {
+    if (result == NULL)
+    {
         fprintf(stderr, "Erro ao alocar memória.\n");
         exit(EXIT_FAILURE);
     }
 
-    strncpy(result, input, position - input); 
+    strncpy(result, input, position - input);
 
-    result[position - input] = '\0';   
+    result[position - input] = '\0';
 
     strcat(result, replacement);
     strcat(result, position + patternLength);
@@ -164,7 +149,7 @@ char *replaceTextByIP(char *input, const char *target, const char *replacement)
     return result;
 }
 
-int main(int argc, char *argv[]) 
+int main(int argc, char *argv[])
 {
     int server_fd, new_socket, valread;
     struct sockaddr_in address;
@@ -175,7 +160,7 @@ int main(int argc, char *argv[])
     const char *nomeArquivo = "/data/client.html";
     bool executing = false;
 
-    if(!conectarInternet())
+    if (!conectarInternet())
     {
         exit(EXIT_FAILURE);
     }
@@ -197,7 +182,7 @@ int main(int argc, char *argv[])
     address.sin_family = AF_INET;
     address.sin_port = htons(PORT);
     address.sin_addr.s_addr = INADDR_ANY;
-    
+
     if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0)
     {
         perror("bind falhou.");
@@ -233,7 +218,7 @@ int main(int argc, char *argv[])
                 char *conteudo = lerArquivoHTML(nomeArquivo);
 
                 if (conteudo != NULL)
-                {                    
+                {
                     char *html = replaceTextByIP(conteudo, "SERVER_IP_AD", obterIP(new_socket, address, addrlen));
                     sprintf(response, "%s%s", "HTTP/1.1 200 OK\r\n"
                                               "Content-Type: text/html; charset=utf-8\r\n"
@@ -254,7 +239,7 @@ int main(int argc, char *argv[])
             // apenas uma requisicao sera aceita por vez
             else if (executing)
             {
-                write(new_socket, "HTTP/1.1 429 Too Many Requests\n\n", 33);
+                write(new_socket, "HTTP/1.1 429 Too Many Requests\n\nServidor cheio", 47);
             }
             // verifica se a requisição é do tipo POST
             else if (strncmp(buffer, "POST", 4) == 0)
@@ -262,24 +247,45 @@ int main(int argc, char *argv[])
                 executing = true;
 
                 // trata a requisição POST
-                char *timer = getValue(strstr(buffer, "timer="), "timer=");
-                char *pausa = getValue(strstr(buffer, "pausa="), "pausa=");
-                char *code = getValue(strstr(buffer, "codigo="), "codigo=");
-
-                if (code != NULL && timer != NULL && pausa !=NULL)
+                char *json_text = strstr(buffer, "\r\n\r\n");
+                if (json_text != NULL)
                 {
-                    Parser *parser = (Parser *)malloc(sizeof(Parser));
-                    initializeParser(parser);
+                    json_text += 4;
 
-                    HttpResponse *httpResponse = parse(parser, code, timer, pausa);
+                    cJSON *json;
+                    json = cJSON_Parse(json_text);
 
-                    char *text = httpResponseToText(httpResponse);
+                    if (!json)
+                    {
+                        write(new_socket, "HTTP/1.1 400 Bad Request\n\nJSON mal formatado", 43);
+                        printf("JSON mal formatado.\n");
+                    }
+                    else
+                    {
+                        cJSON *code = cJSON_GetObjectItem(json, "code");
+                        cJSON *timer = cJSON_GetObjectItem(json, "timer");
+                        cJSON *delay = cJSON_GetObjectItem(json, "delay");
 
-                    // Envia a resposta do servidor para o cliente
-                    write(new_socket, text, strlen(text));
-                    free(text);
-                    freeHttpResponse(httpResponse);
-                    freeParser(parser);
+                        if (code && timer && delay)
+                        {
+                            Parser *parser = (Parser *)malloc(sizeof(Parser));
+                            initializeParser(parser);
+
+                            HttpResponse *httpResponse = parse(parser, code->valuestring, timer->valuestring, delay->valuestring);
+
+                            char *text = httpResponseToText(httpResponse);
+                            write(new_socket, text, strlen(text));
+                            
+                            free(text);
+                            freeHttpResponse(httpResponse);
+                            freeParser(parser);
+                        }
+                        else
+                        {
+                            write(new_socket, "HTTP/1.1 400 Bad Request\n\nJSON mal formatado", 43);
+                            printf("Erro ao obter valores do JSON.\n");
+                        }
+                    }
                     executing = false;
                 }
                 else
@@ -294,7 +300,7 @@ int main(int argc, char *argv[])
                 write(new_socket, "HTTP/1.1 400 Bad Request\n\n", 25);
             }
         }
-        
+
         memset(buffer, 0, sizeof(buffer));
         memset(response, 0, sizeof(response));
         close(new_socket);
