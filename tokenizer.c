@@ -5,23 +5,23 @@ typedef struct
 {
     int position;
     char *input;
-    char *tokenizerError;
+    char *error;
 } Tokenizer;
 
 void initializeTokenizer(Tokenizer *tokenizer)
 {
     tokenizer->position = 0;
     tokenizer->input = (char *)malloc(1024 * sizeof(char));
-    tokenizer->tokenizerError = (char *)malloc(192 * sizeof(char));
+    tokenizer->error = (char *)malloc(192 * sizeof(char));
 
     strcpy(tokenizer->input, "");
-    strcpy(tokenizer->tokenizerError, "");
+    strcpy(tokenizer->error, "");
 }
 
 void freeTokenizer(Tokenizer *tokenizer)
 {
     free(tokenizer->input);
-    free(tokenizer->tokenizerError);
+    free(tokenizer->error);
 
     tokenizer = NULL;
 }
@@ -147,7 +147,7 @@ Token *getNextToken(Tokenizer *tokenizer)
 
     if (endState < 0 || (endState != state && getTokenForState(lastState) == -2))
     {
-        strcpy(tokenizer->tokenizerError, SCANNER_ERROR[lastState]);
+        sprintf(tokenizer->error, "Erro na posição %d: %s.", start, SCANNER_ERROR[lastState]);
         return NULL;
     }
 

@@ -36,9 +36,7 @@ typedef struct
     bool flagZ;
     int timer;
     double delay;
-    char *machineError;
-    char *errorState;
-    int errorCode;
+    char *error;
 } Machine;
 
 void initializeMachine(Machine *machine)
@@ -60,11 +58,9 @@ void initializeMachine(Machine *machine)
     machine->labelHead = NULL;
     machine->flagC = false;
     machine->flagZ = false;
-    machine->machineError = (char *)malloc(192 * sizeof(char));
-    machine->errorState = (char *)malloc(32 * sizeof(char));
+    machine->error = (char *)malloc(192 * sizeof(char));
 
-    strcpy(machine->machineError, "");
-    strcpy(machine->errorState, "");
+    strcpy(machine->error, "");
 }
 
 void setTimer(Machine *machine, int timer)
@@ -98,11 +94,9 @@ void freeMachine(Machine *machine)
     freeLabelNodes(machine->labelHead);
     freeMemory(&(machine->memory));
 
-    free(machine->machineError);
-    free(machine->errorState);
+    free(machine->error);
 
-    machine->machineError = NULL;
-    machine->errorState = NULL;
+    machine->error = NULL;
     machine = NULL;
 }
 
@@ -113,26 +107,6 @@ void delay(Machine *machine)
     while (clock() < start_time + delay)
     {
     }
-}
-
-void addOUTsToMessage(Machine *machine)
-{
-    char value[10];
-    strcat(machine->machineError, "\nOUT0:");
-    sprintf(value, "%X", machine->outputs[0]);
-    strcat(machine->machineError, value);
-
-    strcat(machine->machineError, " OUT1:");
-    sprintf(value, "%X", machine->outputs[1]);
-    strcat(machine->machineError, value);
-
-    strcat(machine->machineError, " OUT2:");
-    sprintf(value, "%X", machine->outputs[2]);
-    strcat(machine->machineError, value);
-
-    strcat(machine->machineError, " OUT3:");
-    sprintf(value, "%X", machine->outputs[3]);
-    strcat(machine->machineError, value);
 }
 
 TokenNode *getLabel(Token *token, Machine *machine)
@@ -373,7 +347,7 @@ void movO(char *from, char *out, Machine *machine)
     }
     else
     {
-        printf("Nao foi possivel ler a porta OUT%d.\n", outPos);
+        printf("Não foi possível ler a porta OUT%d.\n", outPos);
     }
 }
 
@@ -392,7 +366,7 @@ void movI(char *in, char *to, Machine *machine)
     fp = popen(buffer, "r");
     if (fp == NULL)
     {
-        printf("Nao foi possivel ler a porta IN%d.\n", inPos);
+        printf("Não foi possível ler a porta IN%d.\n", inPos);
     }
     else
     {
@@ -404,7 +378,7 @@ void movI(char *in, char *to, Machine *machine)
             }
             else
             {
-                printf("Nao foi possivel ler a porta IN%d.\n", inPos);
+                printf("Não foi possível ler a porta IN%d.\n", inPos);
             }
         }
         pclose(fp);
@@ -585,9 +559,7 @@ HttpResponse *execute(Machine *machine)
             }
             else
             {
-                strcpy(machine->machineError, "StackOverflow: Pilha de chamadas sobrecarregada");
-                strcpy(machine->errorState, "Bad Request");
-                machine->errorCode = 400;
+                strcpy(machine->error, "StackOverflow: Pilha de chamadas sobrecarregada.");
                 break;
             }
             break;
@@ -599,9 +571,7 @@ HttpResponse *execute(Machine *machine)
             }
             else
             {
-                strcpy(machine->machineError, "StackUnderflow: Pilha de chamadas vazia");
-                strcpy(machine->errorState, "Bad Request");
-                machine->errorCode = 400;
+                strcpy(machine->error, "StackUnderflow: Pilha de chamadas vazia.");
                 break;
             }
             break;
@@ -614,9 +584,8 @@ HttpResponse *execute(Machine *machine)
             }
             else
             {
-                strcpy(machine->machineError, "StackOverflow: Pilha de dados sobrecarregada");
-                strcpy(machine->errorState, "Bad Request");
-                machine->errorCode = 400;
+                strcpy(machine->error, "StackOverflow: Pilha de dados sobrecarregada.");
+
                 break;
             }
             break;
@@ -629,9 +598,7 @@ HttpResponse *execute(Machine *machine)
             }
             else
             {
-                strcpy(machine->machineError, "StackUnderflow: Pilha de dados vazia");
-                strcpy(machine->errorState, "Bad Request");
-                machine->errorCode = 400;
+                strcpy(machine->error, "StackUnderflow: Pilha de dados vazia.");
                 break;
             }
             break;
@@ -641,7 +608,7 @@ HttpResponse *execute(Machine *machine)
         }
 
         // interrompe a execucao se identificar algum erro
-        if (strlen(machine->machineError) != 0)
+        if (strlen(machine->error) != 0)
         {
             break;
         }
@@ -650,18 +617,14 @@ HttpResponse *execute(Machine *machine)
         time_t currentTime = time(NULL);
         if ((currentTime - startTime) >= machine->timer)
         {
-            strcpy(machine->machineError, "Tempo limite atingido. Encerrando o programa");
-            strcpy(machine->errorState, "OK");
-            machine->errorCode = 200;
+            strcpy(machine->error, "Tempo limite atingido. Programa encerrado.");
             break;
         }
 
         // interrompe a execucao se current for NULL
         if (current == NULL)
         {
-            strcpy(machine->machineError, "Execucao interrompida devido a erro inesperado");
-            strcpy(machine->errorState, "Internal Server Error");
-            machine->errorCode = 500;
+            strcpy(machine->error, "Execução interrompida devido a erro inesperado.");
             break;
         }
 
@@ -670,11 +633,10 @@ HttpResponse *execute(Machine *machine)
         delay(machine);
     }
 
-    addOUTsToMessage(machine);
-    if (strlen(machine->machineError) != 0)
+    if (strlen(machine->error) != 0)
     {
-        return createHttpResponse(machine->machineError, machine->errorCode, machine->errorState);
+        return createHttpResponse(machine->error, 400, "Bad Request");
     }
 
-    return createHttpResponse("Execucao concluida com suscesso", 200, "OK");
+    return createHttpResponse("Execução concluída com suscesso.", 200, "OK");
 }

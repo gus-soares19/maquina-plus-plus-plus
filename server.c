@@ -39,18 +39,18 @@ bool conectarInternet(void)
     printf("renew wlan0\n");
     if (system("renew wlan0") != 0)
     {
-        perror("nao foi possivel conectar.\n");
+        perror("não foi possível conectar.\n");
         return false;
     }
 
     printf("ifconfig\n");
     if (system("ifconfig") != 0)
     {
-        perror("nao foi possivel obter um IP.\n");
+        perror("não foi possível obter um IP.\n");
         return false;
     }
 
-    printf("conexao com a internet bem sucedida.\n");
+    printf("conexão com a internet bem sucedida.\n");
     return true;
 }
 
@@ -195,7 +195,7 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    printf("aguardando requisicoes na porta %d...\n", PORT);
+    printf("aguardando requisições na porta %d...\n", PORT);
     // aguarda por requisições
     while (1)
     {
@@ -209,7 +209,7 @@ int main(int argc, char *argv[])
 
         if (valread > 0)
         {
-            printf("requisicao recebida.\n");
+            printf("requisição recebida.\n");
 
             // verifica se a requisição é do tipo GET
             if (strncmp(buffer, "GET", 3) == 0)

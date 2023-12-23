@@ -13,7 +13,7 @@ typedef struct
     int stackIndex;
     int generatedByte;
     int generatedByteAux;
-    char *contextualizerError;
+    char *error;
 } Contextualizer;
 
 void initializeContextualizer(Contextualizer *contextualizer)
@@ -21,9 +21,9 @@ void initializeContextualizer(Contextualizer *contextualizer)
     contextualizer->stackIndex = 0;
     contextualizer->generatedByte = 0;
     contextualizer->generatedByteAux = 0;
-    contextualizer->contextualizerError = (char *)malloc(192 * sizeof(char));
+    contextualizer->error = (char *)malloc(192 * sizeof(char));
 
-    strcpy(contextualizer->contextualizerError, "");
+    strcpy(contextualizer->error, "");
 
     initializeStack(&contextualizer->stack);
     initializeHashMap(&contextualizer->labels);
@@ -35,7 +35,7 @@ void freeContextualizer(Contextualizer *contextualizer)
     freeHashMap(&(contextualizer->labels));
     freeHashMapList(&(contextualizer->labelsBuffer));
     clear(&(contextualizer->stack));
-    free(contextualizer->contextualizerError);
+    free(contextualizer->error);
 
     contextualizer = NULL;
 }
@@ -53,7 +53,6 @@ void toUpperCase(char *str)
 void executeAction(Contextualizer *contextualizer, int action, Token *token)
 {
     char *value = (char *)malloc(7 * sizeof(char));
-    char *error = (char *)malloc(32 * sizeof(char));
 
     switch (action)
     {
@@ -96,9 +95,7 @@ void executeAction(Contextualizer *contextualizer, int action, Token *token)
                 }
                 else
                 {
-                    strcpy(error, "");
-                    sprintf(error, "%s%s", "Label nao existe: ", bufferList->key);
-                    strcpy(contextualizer->contextualizerError, error);
+                    sprintf(contextualizer->error, "Erro na posição %d: label '%s' não existe.", token->position, bufferList->key);                    
                 }
             }
         }
@@ -295,9 +292,7 @@ void executeAction(Contextualizer *contextualizer, int action, Token *token)
         }
         else
         {
-            strcpy(error, "");
-            sprintf(error, "%s%s", "Label duplicada: ", label);
-            strcpy(contextualizer->contextualizerError, error);
+            sprintf(contextualizer->error, "Erro na posição %d: label '%s' duplicada.", token->position, label);
         }
         free(label);
         break;
@@ -307,5 +302,4 @@ void executeAction(Contextualizer *contextualizer, int action, Token *token)
     }
 
     free(value);
-    free(error);
 }

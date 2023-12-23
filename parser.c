@@ -14,7 +14,7 @@ typedef struct
     Tokenizer _tokenizer;
     Contextualizer _contextualizer;
     Machine _machine;
-    char *parserError;
+    char *error;
 } Parser;
 
 bool isTerminal(int x)
@@ -114,7 +114,7 @@ bool step(Parser *parser)
         }
         else
         {
-            strcpy(parser->parserError, PARSER_ERROR[x]);
+            sprintf(parser->error, "Erro na posição %d: %s.", parser->_currentToken->position, PARSER_ERROR[x]);
             return true;
         }
     }
@@ -126,7 +126,7 @@ bool step(Parser *parser)
         }
         else
         {
-            strcpy(parser->parserError, PARSER_ERROR[x]);
+            strcpy(parser->error, PARSER_ERROR[x]);
             return true;
         }
     }
@@ -147,9 +147,9 @@ void initializeParser(Parser *parser)
     push(&(parser->_stack), DOLLAR);
     push(&(parser->_stack), START_SYMBOL);
 
-    parser->parserError = (char *)malloc(192 * sizeof(char));
+    parser->error = (char *)malloc(192 * sizeof(char));
 
-    strcpy(parser->parserError, "");
+    strcpy(parser->error, "");
 
     parser->_currentToken = NULL;
     parser->_previousToken = NULL;
@@ -161,10 +161,10 @@ void freeParser(Parser *parser)
     freeContextualizer(&(parser->_contextualizer));
     freeTokenizer(&(parser->_tokenizer));
     clear(&(parser->_stack));
-    free(parser->parserError);
+    free(parser->error);
     free(parser);
 
-    parser->parserError = NULL;
+    parser->error = NULL;
     parser = NULL;
 }
 
@@ -188,25 +188,25 @@ HttpResponse *parse(Parser *parser, char *code, char *timer, char *delay)
 
     while (!step(parser))
     {
-        if (strlen(parser->_tokenizer.tokenizerError) != 0 ||
-            strlen(parser->_contextualizer.contextualizerError) != 0 ||
-            strlen(parser->parserError) != 0)
+        if (strlen(parser->_tokenizer.error) != 0 ||
+            strlen(parser->_contextualizer.error) != 0 ||
+            strlen(parser->error) != 0)
         {
             break;
         };
     }
 
-    if (strlen(parser->_tokenizer.tokenizerError) != 0)
+    if (strlen(parser->_tokenizer.error) != 0)
     {
-        return createHttpResponse(parser->_tokenizer.tokenizerError, 400, "Bad Request");
+        return createHttpResponse(parser->_tokenizer.error, 400, "Bad Request");
     }
-    if (strlen(parser->parserError) != 0)
+    if (strlen(parser->error) != 0)
     {
-        return createHttpResponse(parser->parserError, 400, "Bad Request");
+        return createHttpResponse(parser->error, 400, "Bad Request");
     }
-    if (strlen(parser->_contextualizer.contextualizerError) != 0)
+    if (strlen(parser->_contextualizer.error) != 0)
     {
-        return createHttpResponse(parser->_contextualizer.contextualizerError, 400, "Bad Request");
+        return createHttpResponse(parser->_contextualizer.error, 400, "Bad Request");
     }
 
     return execute(&(parser->_machine));
