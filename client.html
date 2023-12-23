@@ -16,8 +16,12 @@
         }
 
         .params,
-        .timer {
+        .timer, .delay, .acao {
             margin: 5px 5px;
+        }
+
+        .acao{
+            display: flex;
         }
 
         textarea {
@@ -38,12 +42,24 @@
             <textarea type="text" id="codigo" name="codigo"></textarea>
             <div id="params">
                 <div class="timer">
-                    <label for="tempo">Tempo máximo de execução (ss)</label>
-                    <input type="number" value="60" min="10" max="1200" id="tempo">
+                    <label>Tempo máximo de execução (ss)</label>
+                    <input type="number" value="60" min="10" max="1200" id="timer">
                 </div>
-                <div class="timer">
-                    <label for="tempo">Intervalo entre instruções (ss)</label>
-                    <input type="number" value="0" min="0" max="1" id="pausa">
+                <div class="delay">
+                    <label>Intervalo entre instruções (ss)</label>
+                    <input type="number" value="0" min="0" max="1" id="delay">
+                </div>
+                <div class="acao">
+                    <label>Selecione uma ação:</label>
+                    <div>
+                        <input type="radio" name="acao" id="interpretar" value="1" checked />
+                        <label for="huey">Interpretar</label>
+                    </div>
+
+                    <div>
+                        <input type="radio" name="acao" id="compilar" value="0" />
+                        <label for="dewey">Compilar</label>
+                    </div>
                 </div>
             </div>
             <button id="botao">Enviar</button>
@@ -51,9 +67,9 @@
     </div>
     <script>
         function timerValido() {
-            let timer = document.getElementById("tempo").value;
-            let pausa = document.getElementById("pausa").value;
-            return (timer >= 10 && timer <= 1200) && (pausa >= 0 && pausa <= 1);
+            let timer = document.getElementById("timer").value;
+            let delay = document.getElementById("delay").value;
+            return (timer >= 10 && timer <= 1200) && (delay >= 0 && delay <= 1);
         }
         function codigoValido() {
             return document.getElementById("codigo").value.trim().length > 0
@@ -77,8 +93,9 @@
                         const url = "http://SERVER_IP_AD:8080";
                         var data = {
                             code: ajustarCodigo(),
-                            timer: document.getElementById("tempo").value,
-                            delay: document.getElementById("pausa").value
+                            timer: document.getElementById("timer").value,
+                            delay: document.getElementById("delay").value,
+                            mode: document.querySelector('input[name="acao"]:checked').value
                         };
                         fetch(url, {
                             method: "POST",
@@ -88,7 +105,7 @@
                             body: JSON.stringify(data)
                         }).then(response => response.text())
                             .then(data => {
-                                alert(`Resposta do servidor: ${data}`);
+                                alert(`${data}`);
                             })
                             .catch(error => {
                                 alert(`Erro: ${error}`);

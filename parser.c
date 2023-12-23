@@ -168,7 +168,7 @@ void freeParser(Parser *parser)
     parser = NULL;
 }
 
-HttpResponse *parse(Parser *parser, char *code, char *timer, char *delay)
+HttpResponse *parse(Parser *parser, char *code, char *timer, char *delay, char *mode)
 {
     setInput(&(parser->_tokenizer), code);
     setTimer(&(parser->_machine), atoi(timer));
@@ -209,5 +209,5 @@ HttpResponse *parse(Parser *parser, char *code, char *timer, char *delay)
         return createHttpResponse(parser->_contextualizer.error, 400, "Bad Request");
     }
 
-    return execute(&(parser->_machine));
+    return atoi(mode) == 0 ? createHttpResponse("Compilado com sucesso.", 200, "OK") : execute(&(parser->_machine));
 }

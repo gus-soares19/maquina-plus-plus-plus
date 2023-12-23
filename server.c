@@ -236,16 +236,9 @@ int main(int argc, char *argv[])
                     write(new_socket, "HTTP/1.1 404 Not Found\n\n", 25);
                 }
             }
-            // apenas uma requisicao sera aceita por vez
-            else if (executing)
-            {
-                write(new_socket, "HTTP/1.1 429 Too Many Requests\n\nServidor cheio", 47);
-            }
             // verifica se a requisição é do tipo POST
             else if (strncmp(buffer, "POST", 4) == 0)
-            {
-                executing = true;
-
+            {            
                 // trata a requisição POST
                 char *json_text = strstr(buffer, "\r\n\r\n");
                 if (json_text != NULL)
@@ -265,20 +258,31 @@ int main(int argc, char *argv[])
                         cJSON *code = cJSON_GetObjectItem(json, "code");
                         cJSON *timer = cJSON_GetObjectItem(json, "timer");
                         cJSON *delay = cJSON_GetObjectItem(json, "delay");
+                        cJSON *mode = cJSON_GetObjectItem(json, "mode");
 
                         if (code && timer && delay)
                         {
-                            Parser *parser = (Parser *)malloc(sizeof(Parser));
-                            initializeParser(parser);
+                            // apenas uma interpretação por vez é permitida
+                            if (atoi(mode->valuestring) == 0 || !executing)
+                            {
+                                executing = atoi(mode->valuestring) == 1;
 
-                            HttpResponse *httpResponse = parse(parser, code->valuestring, timer->valuestring, delay->valuestring);
+                                Parser *parser = (Parser *)malloc(sizeof(Parser));
+                                initializeParser(parser);
 
-                            char *text = httpResponseToText(httpResponse);
-                            write(new_socket, text, strlen(text));
-                            
-                            free(text);
-                            freeHttpResponse(httpResponse);
-                            freeParser(parser);
+                                HttpResponse *httpResponse = parse(parser, code->valuestring, timer->valuestring, delay->valuestring, mode->valuestring);
+
+                                char *text = httpResponseToText(httpResponse);
+                                write(new_socket, text, strlen(text));
+
+                                free(text);
+                                freeHttpResponse(httpResponse);
+                                freeParser(parser);
+                            }
+                            else
+                            {
+                                write(new_socket, "HTTP/1.1 429 Too Many Requests\n\nServidor cheio", 47);
+                            }
                         }
                         else
                         {
