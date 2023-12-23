@@ -238,7 +238,7 @@ int main(int argc, char *argv[])
             }
             // verifica se a requisição é do tipo POST
             else if (strncmp(buffer, "POST", 4) == 0)
-            {            
+            {
                 // trata a requisição POST
                 char *json_text = strstr(buffer, "\r\n\r\n");
                 if (json_text != NULL)
@@ -270,13 +270,14 @@ int main(int argc, char *argv[])
                                 Parser *parser = (Parser *)malloc(sizeof(Parser));
                                 initializeParser(parser);
 
-                                HttpResponse *httpResponse = parse(parser, code->valuestring, timer->valuestring, delay->valuestring, mode->valuestring);
+                                HttpResponse *httpResponse = parse(parser, code->valuestring, atoi(timer->valuestring), strtod(delay->valuestring, NULL), atoi(mode->valuestring));
 
                                 char *text = httpResponseToText(httpResponse);
                                 write(new_socket, text, strlen(text));
 
                                 free(text);
                                 freeHttpResponse(httpResponse);
+                                cJSON_Delete(json);
                                 freeParser(parser);
                             }
                             else
