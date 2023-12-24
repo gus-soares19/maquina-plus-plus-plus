@@ -11,10 +11,16 @@
 
 #include <unistd.h>
 #include "netutils/cJSON.h"
+#include <pthread.h>
 
 #define PORT 8080
+#define MAX_CONNECTIONS 20
 
-bool conectarInternet(void)
+static int conn_counter;
+static bool executing;
+static const char *ip;
+
+bool connect_wifi(void)
 {
     char buffer[100];
     char *psk_command = "wapi psk wlan0";
@@ -54,7 +60,7 @@ bool conectarInternet(void)
     return true;
 }
 
-const char *obterIP(int socket, struct sockaddr_in address, socklen_t addrlen)
+const char *get_ip_addr(int socket, struct sockaddr_in address, socklen_t addrlen)
 {
     static char buffer[INET_ADDRSTRLEN];
     if (getsockname(socket, (struct sockaddr *)&address, &addrlen) == -1)
@@ -68,7 +74,7 @@ const char *obterIP(int socket, struct sockaddr_in address, socklen_t addrlen)
 
     if (ip_str == NULL)
     {
-        perror("inet_ntop.");
+        perror("Erro ao obter o IP.");
         close(socket);
         exit(EXIT_FAILURE);
     }
@@ -76,48 +82,47 @@ const char *obterIP(int socket, struct sockaddr_in address, socklen_t addrlen)
     return ip_str;
 }
 
-char *lerArquivoHTML(const char *nomeArquivo)
+char *get_html_file(const char *file_name)
 {
-    FILE *arquivo = fopen(nomeArquivo, "r");
-    if (arquivo == NULL)
+    FILE *file = fopen(file_name, "r");
+    if (file == NULL)
     {
-        fprintf(stderr, "Erro ao abrir o arquivo %s.\n", nomeArquivo);
+        fprintf(stderr, "Erro ao abrir o arquivo %s.\n", file_name);
         return NULL;
     }
 
     // Obtém o tamanho do arquivo
-    fseek(arquivo, 0, SEEK_END);
-    long tamanho = ftell(arquivo);
-    rewind(arquivo);
+    fseek(file, 0, SEEK_END);
+    long length = ftell(file);
+    rewind(file);
 
     // Aloca memória para armazenar o conteúdo do arquivo
-    char *conteudo = (char *)malloc(sizeof(char) * (tamanho + 1));
-    if (conteudo == NULL)
+    char *content = (char *)malloc(sizeof(char) * (length + 1));
+    if (content == NULL)
     {
         fprintf(stderr, "Erro ao alocar memória para o conteúdo do arquivo.\n");
-        fclose(arquivo);
+        fclose(file);
         return NULL;
     }
 
     // Lê o conteúdo do arquivo
-    size_t lidos = fread(conteudo, sizeof(char), tamanho, arquivo);
-    if (lidos != tamanho)
+    size_t bytes = fread(content, sizeof(char), length, file);
+    if (bytes != length)
     {
         fprintf(stderr, "Erro ao ler o conteúdo do arquivo.\n");
-        fclose(arquivo);
-        free(conteudo);
+        fclose(file);
+        free(content);
         return NULL;
     }
 
     // Adiciona o caractere nulo ao final da string
-    conteudo[tamanho] = '\0';
+    content[length] = '\0';
+    fclose(file);
 
-    fclose(arquivo);
-
-    return conteudo;
+    return content;
 }
 
-char *replaceTextByIP(char *input, const char *target, const char *replacement)
+char *replace_text(char *input, const char *target, const char *replacement)
 {
     char *position = strstr(input, target);
 
@@ -149,18 +154,173 @@ char *replaceTextByIP(char *input, const char *target, const char *replacement)
     return result;
 }
 
+void *request_handler(void *arg)
+{
+    int socket = *((int *)arg);
+    char buffer[1024];
+    int bytes;
+    const char *file = "/data/client.html";
+    char *html_response = "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\n\r\n";
+
+    memset(buffer, 0, sizeof(buffer));
+    bytes = read(socket, buffer, sizeof(buffer));
+
+    if (bytes == 0)
+    {
+        printf("cliente desconectou.\n");
+        pthread_exit(NULL);
+    }
+
+    printf("requisição recebida.\n");
+
+    // trata requisições GET
+    if (strncmp(buffer, "GET", 3) == 0)
+    {
+        char *html_file = replace_text(get_html_file(file), "SERVER_IP_AD", ip);
+        if (html_file == NULL)
+        {
+            // arquivo de interface não encontrado
+            write(socket, "HTTP/1.1 404 Not Found\n\nArquivo de interface não encontrado", 60);
+            close(socket);
+            printf("requisição encerrada.\n");
+
+            conn_counter--;
+            pthread_exit(NULL);
+        }
+
+        char *response = (char *)malloc(strlen(html_file) + strlen(html_response) + 1);
+        strcpy(response, html_response);
+        strcat(response, html_file);
+
+        send(socket, response, strlen(response), 0);
+        printf("interface web retornada.\n");
+
+        free(html_file);
+        free(response);
+    }
+    else if (strncmp(buffer, "POST", 4) == 0)
+    {
+        char *json_text = strstr(buffer, "\r\n\r\n");
+        if (json_text == NULL)
+        {
+            // requisição mal formatada
+            write(socket, "HTTP/1.1 400 Bad Request\n\nJSON mal formatado", 43);
+            close(socket);
+            printf("JSON mal formatado.\n");
+
+            conn_counter--;
+            pthread_exit(NULL);
+        }
+
+        json_text += 4;
+
+        cJSON *json;
+        json = cJSON_Parse(json_text);
+
+        if (json == NULL)
+        {
+            // requisição mal formatada
+            write(socket, "HTTP/1.1 400 Bad Request\n\nJSON mal formatado", 43);
+            close(socket);
+            printf("JSON mal formatado.\n");
+
+            conn_counter--;
+            pthread_exit(NULL);
+        }
+
+        cJSON *code = cJSON_GetObjectItem(json, "code");
+        cJSON *timer = cJSON_GetObjectItem(json, "timer");
+        cJSON *delay = cJSON_GetObjectItem(json, "delay");
+        cJSON *mode = cJSON_GetObjectItem(json, "mode");
+
+        if (code == NULL || timer == NULL || delay == NULL || mode == NULL)
+        {
+            // requisição mal formatada
+            write(socket, "HTTP/1.1 400 Bad Request\n\nJSON mal formatado", 43);
+            close(socket);
+            printf("Erro ao obter valores do JSON.\n");
+
+            conn_counter--;
+            pthread_exit(NULL);
+        }
+
+        // apenas uma interpretação por vez é permitida
+        if (atoi(mode->valuestring) == 1 && executing)
+        {
+            // requisição ignorada
+            write(socket, "HTTP/1.1 429 Too Many Requests\n\nServidor ocupado", 48);
+            close(socket);
+            printf("apenas uma interpretação pode ser feita por vez.\n");
+
+            conn_counter--;
+            pthread_exit(NULL);
+        }
+
+        if (atoi(mode->valuestring) == 1)
+        {
+            executing = true;
+        }
+
+        Parser *parser = (Parser *)malloc(sizeof(Parser));
+        initializeParser(parser);
+
+        if (parser == NULL)
+        {
+            write(socket, "500 Interal Server Error\n\nNão foi possível alocar a aplicação", 60);
+            printf("requisição encerrada.\n");
+            close(socket);
+
+            if (atoi(mode->valuestring) == 1)
+            {
+                executing = false;
+            }
+
+            perror("falha ao alocar memória para a aplicação.");
+            exit(EXIT_FAILURE);
+        }
+
+        HttpResponse *httpResponse = parse(parser, code->valuestring, atoi(timer->valuestring), strtod(delay->valuestring, NULL), atoi(mode->valuestring));
+
+        // retorna o resultado da operação
+        char *text = httpResponseToText(httpResponse);
+        write(socket, text, strlen(text));
+        printf("%s\n", httpResponse->message);
+
+        if (atoi(mode->valuestring) == 1)
+        {
+            executing = false;
+        }
+
+        free(text);
+        freeHttpResponse(httpResponse);
+        cJSON_Delete(json);
+        freeParser(parser);
+    }
+    else
+    {
+        // requisição inválida
+        write(socket, "HTTP/1.1 405 Method Not Allowed\n\n", 32);
+        printf("apenas os métodos GET e POST são aceitos.\n");
+    }
+
+    close(socket);
+    printf("requisição encerrada.\n");
+
+    conn_counter--;
+    pthread_exit(NULL);
+}
+
 int main(int argc, char *argv[])
 {
-    int server_fd, new_socket, valread;
+    int server_fd, new_socket;
     struct sockaddr_in address;
     int opt = 1;
     socklen_t addrlen = sizeof(address);
-    char buffer[2048] = {0};
-    char response[3072] = {0};
-    const char *nomeArquivo = "/data/client.html";
-    bool executing = false;
+    pthread_t tid[MAX_CONNECTIONS];
 
-    if (!conectarInternet())
+    conn_counter = 0;
+
+    if (!connect_wifi())
     {
         exit(EXIT_FAILURE);
     }
@@ -189,126 +349,36 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    if (listen(server_fd, 3) < 0)
+    if (listen(server_fd, MAX_CONNECTIONS) < 0)
     {
-        perror("listen.");
+        perror("falha ao aguardar por requisições.");
         exit(EXIT_FAILURE);
     }
 
     printf("aguardando requisições na porta %d...\n", PORT);
+
     // aguarda por requisições
     while (1)
     {
         if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen)) < 0)
         {
-            perror("accept.");
+            perror("falha ao aceitar requisição.");
             exit(EXIT_FAILURE);
         }
 
-        valread = read(new_socket, buffer, 1024);
+        ip = get_ip_addr(new_socket, address, addrlen);
 
-        if (valread > 0)
+        if (pthread_create(&tid[conn_counter++], NULL, request_handler, &new_socket) < 0)
         {
-            printf("requisição recebida.\n");
-
-            // verifica se a requisição é do tipo GET
-            if (strncmp(buffer, "GET", 3) == 0)
-            {
-                // trata a requisição GET
-                char *conteudo = lerArquivoHTML(nomeArquivo);
-
-                if (conteudo != NULL)
-                {
-                    char *html = replaceTextByIP(conteudo, "SERVER_IP_AD", obterIP(new_socket, address, addrlen));
-                    sprintf(response, "%s%s", "HTTP/1.1 200 OK\r\n"
-                                              "Content-Type: text/html; charset=utf-8\r\n"
-                                              "\r\n",
-                            html);
-
-                    // Envia a resposta do servidor para o cliente
-                    send(new_socket, response, strlen(response), 0);
-                    free(conteudo);
-                    free(html);
-                }
-                else
-                {
-                    // requisição inválida
-                    write(new_socket, "HTTP/1.1 404 Not Found\n\n", 25);
-                }
-            }
-            // verifica se a requisição é do tipo POST
-            else if (strncmp(buffer, "POST", 4) == 0)
-            {
-                // trata a requisição POST
-                char *json_text = strstr(buffer, "\r\n\r\n");
-                if (json_text != NULL)
-                {
-                    json_text += 4;
-
-                    cJSON *json;
-                    json = cJSON_Parse(json_text);
-
-                    if (!json)
-                    {
-                        write(new_socket, "HTTP/1.1 400 Bad Request\n\nJSON mal formatado", 43);
-                        printf("JSON mal formatado.\n");
-                    }
-                    else
-                    {
-                        cJSON *code = cJSON_GetObjectItem(json, "code");
-                        cJSON *timer = cJSON_GetObjectItem(json, "timer");
-                        cJSON *delay = cJSON_GetObjectItem(json, "delay");
-                        cJSON *mode = cJSON_GetObjectItem(json, "mode");
-
-                        if (code && timer && delay)
-                        {
-                            // apenas uma interpretação por vez é permitida
-                            if (atoi(mode->valuestring) == 0 || !executing)
-                            {
-                                executing = atoi(mode->valuestring) == 1;
-
-                                Parser *parser = (Parser *)malloc(sizeof(Parser));
-                                initializeParser(parser);
-
-                                HttpResponse *httpResponse = parse(parser, code->valuestring, atoi(timer->valuestring), strtod(delay->valuestring, NULL), atoi(mode->valuestring));
-
-                                char *text = httpResponseToText(httpResponse);
-                                write(new_socket, text, strlen(text));
-
-                                free(text);
-                                freeHttpResponse(httpResponse);
-                                cJSON_Delete(json);
-                                freeParser(parser);
-                            }
-                            else
-                            {
-                                write(new_socket, "HTTP/1.1 429 Too Many Requests\n\nServidor cheio", 47);
-                            }
-                        }
-                        else
-                        {
-                            write(new_socket, "HTTP/1.1 400 Bad Request\n\nJSON mal formatado", 43);
-                            printf("Erro ao obter valores do JSON.\n");
-                        }
-                    }
-                    executing = false;
-                }
-                else
-                {
-                    // requisição inválida
-                    write(new_socket, "HTTP/1.1 400 Bad Request\n\n", 25);
-                }
-            }
-            else
-            {
-                // requisição inválida
-                write(new_socket, "HTTP/1.1 400 Bad Request\n\n", 25);
-            }
+            perror("falha ao criar thread para a conexão.");
+            exit(EXIT_FAILURE);
         }
 
-        memset(buffer, 0, sizeof(buffer));
-        memset(response, 0, sizeof(response));
-        close(new_socket);
+        if (conn_counter <= MAX_CONNECTIONS)
+        {
+            pthread_detach(tid[conn_counter++]);
+            conn_counter++;
+        }
     }
     return 0;
 }
