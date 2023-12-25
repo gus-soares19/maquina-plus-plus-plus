@@ -5,18 +5,18 @@ typedef struct
     int position;
 } Token;
 
-Token *createToken(int tokenType, char *lexeme, int startPosition)
+Token *token_create(int type, char *lexeme, int start)
 {
     Token *token = (Token *)malloc(sizeof(Token));
     token->lexeme = (char *)malloc(16 * sizeof(char));
 
     strcpy(token->lexeme, lexeme);
-    token->type = tokenType;
-    token->position = startPosition;
+    token->type = type;
+    token->position = start;
     return token;
 }
 
-void freeToken(Token *token)
+void token_free(Token *token)
 {
     if (token != NULL)
     {

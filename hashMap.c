@@ -2,27 +2,27 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef struct Node
+typedef struct HashMapNode
 {
     char *key;
     int value;
-    struct Node *next;
-} Node;
+    struct HashMapNode *next;
+} HashMapNode;
 
 typedef struct
 {
-    Node *head;
+    HashMapNode *hashMapNodes_head;
 } HashMap;
 
-void initializeHashMap(HashMap *hashMap)
+void hashMap_init(HashMap *hashMap)
 {
-    hashMap->head = NULL;
+    hashMap->hashMapNodes_head = NULL;
 }
 
-void freeHashMap(HashMap *hashMap)
+void hashMap_free(HashMap *hashMap)
 {
-    Node *current = hashMap->head;
-    Node *next = NULL;
+    HashMapNode *current = hashMap->hashMapNodes_head;
+    HashMapNode *next = NULL;
 
     while (current != NULL)
     {
@@ -35,33 +35,33 @@ void freeHashMap(HashMap *hashMap)
     hashMap = NULL;
 }
 
-void put(HashMap *hashMap, const char *key, int value)
+void hashMap_put(HashMap *hashMap, const char *key, int value)
 {
-    Node *newNode = (Node *)malloc(sizeof(Node));
-    newNode->key = (char *)malloc(16 * sizeof(char));
+    HashMapNode *new_hashMapNode = (HashMapNode *)malloc(sizeof(HashMapNode));
+    new_hashMapNode->key = (char *)malloc(16 * sizeof(char));
 
-    strcpy(newNode->key, key);
-    newNode->value = value;
-    newNode->next = NULL;
+    strcpy(new_hashMapNode->key, key);
+    new_hashMapNode->value = value;
+    new_hashMapNode->next = NULL;
 
-    if (hashMap->head == NULL)
+    if (hashMap->hashMapNodes_head == NULL)
     {
-        hashMap->head = newNode;
+        hashMap->hashMapNodes_head = new_hashMapNode;
     }
     else
     {
-        Node *current = hashMap->head;
+        HashMapNode *current = hashMap->hashMapNodes_head;
         while (current->next != NULL)
         {
             current = current->next;
         }
-        current->next = newNode;
+        current->next = new_hashMapNode;
     }
 }
 
-int get(HashMap *hashMap, const char *key)
+int hashMap_get(HashMap *hashMap, const char *key)
 {
-    Node *current = hashMap->head;
+    HashMapNode *current = hashMap->hashMapNodes_head;
     while (current != NULL)
     {
         if (strcmp(current->key, key) == 0)
@@ -70,5 +70,5 @@ int get(HashMap *hashMap, const char *key)
         }
         current = current->next;
     }
-    return -1; // Valor padrão para indicar chave não encontrada
+    return -1;
 }

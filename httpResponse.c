@@ -5,7 +5,7 @@ typedef struct
     char *type;
 } HttpResponse;
 
-HttpResponse *createHttpResponse(char *message, int code, char *type)
+HttpResponse *httpResponse_create(char *message, int code, char *type)
 {
     HttpResponse *response = (HttpResponse *)malloc(sizeof(HttpResponse));
     response->type = (char *)malloc(16 * sizeof(char));
@@ -18,7 +18,7 @@ HttpResponse *createHttpResponse(char *message, int code, char *type)
     return response;
 }
 
-void freeHttpResponse(HttpResponse *httpResponse)
+void httpResponse_free(HttpResponse *httpResponse)
 {
     free(httpResponse->message);
     free(httpResponse->type);
@@ -27,7 +27,7 @@ void freeHttpResponse(HttpResponse *httpResponse)
     httpResponse = NULL;
 }
 
-char *httpResponseToText(HttpResponse *httpResponse)
+char *httpResponse_to_string(HttpResponse *httpResponse)
 {
     char *response = (char *)malloc(384 * sizeof(char));
 

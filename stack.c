@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stdio.h>
+
 #define STACK_SIZE 256
 
 typedef struct
@@ -8,17 +9,22 @@ typedef struct
     int top;
 } Stack;
 
-void initializeStack(Stack *stack)
+void stack_init(Stack *stack)
 {
     stack->top = -1;
 }
 
-bool isEmpty(Stack *stack)
+void stack_free(Stack *stack)
+{
+    stack->top = -1;
+}
+
+bool is_empty(Stack *stack)
 {
     return stack->top == -1;
 }
 
-bool isFull(Stack *stack)
+bool is_full(Stack *stack)
 {
     return stack->top >= STACK_SIZE;
 }
@@ -29,7 +35,7 @@ void push(Stack *stack, int value)
     stack->data[stack->top] = value;
 }
 
-void pushAt(Stack *stack, int index, int value)
+void push_at(Stack *stack, int index, int value)
 {
     if (index > stack->top)
     {
@@ -41,54 +47,21 @@ void pushAt(Stack *stack, int index, int value)
 
 int pop(Stack *stack)
 {
-    if (isEmpty(stack))
-    {
-        return -1;
-    }
-    else
-    {
-        int value = stack->data[stack->top];
-        stack->top--;
-        return value;
-    }
-}
-
-int set(Stack *stack, int index, int value)
-{
-    int atPlace = stack->data[index];
-    stack->data[index] = value;
-    return atPlace;
-}
-
-int peek(Stack *stack)
-{
-    if (isEmpty(stack))
-    {
-        return -1;
-    }
-    else
-    {
-        return stack->data[stack->top];
-    }
-}
-
-void clear(Stack *stack)
-{
-    stack->top = -1;
+    return is_empty(stack) ? -1 : stack->data[stack->top--];
 }
 
 void resize(Stack *stack, int newSize)
 {
     if (newSize > (stack->top + 1))
     {
-        Stack *newStack = (Stack *)malloc(sizeof(Stack));
-        newStack->top = stack->top;
+        Stack *new_stack = (Stack *)malloc(sizeof(Stack));
+        new_stack->top = stack->top;
 
         for (int i = 0; i <= stack->top; i++)
         {
-            newStack->data[i] = stack->data[i];
+            new_stack->data[i] = stack->data[i];
         }
 
-        stack = newStack;
+        stack = new_stack;
     }
 }

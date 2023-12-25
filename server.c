@@ -131,12 +131,12 @@ char *replace_text(char *input, const char *target, const char *replacement)
         return strdup(input);
     }
 
-    int originalLength = strlen(input);
-    int patternLength = strlen(target);
-    int replacementLength = strlen(replacement);
-    int newSize = originalLength - patternLength + replacementLength;
+    int original_length = strlen(input);
+    int pattern_length = strlen(target);
+    int replacement_length = strlen(replacement);
+    int new_size = original_length - pattern_length + replacement_length;
 
-    char *result = (char *)malloc(newSize + 1);
+    char *result = (char *)malloc(new_size + 1);
 
     if (result == NULL)
     {
@@ -149,7 +149,7 @@ char *replace_text(char *input, const char *target, const char *replacement)
     result[position - input] = '\0';
 
     strcat(result, replacement);
-    strcat(result, position + patternLength);
+    strcat(result, position + pattern_length);
 
     return result;
 }
@@ -180,7 +180,7 @@ void *request_handler(void *arg)
         if (html_file == NULL)
         {
             // arquivo de interface não encontrado
-            write(socket, "HTTP/1.1 404 Not Found\n\nArquivo de interface não encontrado", 60);
+            write(socket, "HTTP/1.1 404 Not Found\n\nArquivo de interface não encontrado.", 61);
             close(socket);
             printf("requisição encerrada.\n");
 
@@ -204,7 +204,7 @@ void *request_handler(void *arg)
         if (json_text == NULL)
         {
             // requisição mal formatada
-            write(socket, "HTTP/1.1 400 Bad Request\n\nJSON mal formatado", 43);
+            write(socket, "HTTP/1.1 400 Bad Request\n\nJSON mal formatado.", 44);
             close(socket);
             printf("JSON mal formatado.\n");
 
@@ -220,7 +220,7 @@ void *request_handler(void *arg)
         if (json == NULL)
         {
             // requisição mal formatada
-            write(socket, "HTTP/1.1 400 Bad Request\n\nJSON mal formatado", 43);
+            write(socket, "HTTP/1.1 400 Bad Request\n\nJSON mal formatado.", 44);
             close(socket);
             printf("JSON mal formatado.\n");
 
@@ -236,7 +236,7 @@ void *request_handler(void *arg)
         if (code == NULL || timer == NULL || delay == NULL || mode == NULL)
         {
             // requisição mal formatada
-            write(socket, "HTTP/1.1 400 Bad Request\n\nJSON mal formatado", 43);
+            write(socket, "HTTP/1.1 400 Bad Request\n\nJSON mal formatado.", 44);
             close(socket);
             printf("Erro ao obter valores do JSON.\n");
 
@@ -248,7 +248,7 @@ void *request_handler(void *arg)
         if (atoi(mode->valuestring) == 1 && executing)
         {
             // requisição ignorada
-            write(socket, "HTTP/1.1 429 Too Many Requests\n\nServidor ocupado", 48);
+            write(socket, "HTTP/1.1 429 Too Many Requests\n\nServidor ocupado.", 49);
             close(socket);
             printf("apenas uma interpretação pode ser feita por vez.\n");
 
@@ -262,11 +262,11 @@ void *request_handler(void *arg)
         }
 
         Parser *parser = (Parser *)malloc(sizeof(Parser));
-        initializeParser(parser);
+        parser_init(parser);
 
         if (parser == NULL)
         {
-            write(socket, "500 Interal Server Error\n\nNão foi possível alocar a aplicação", 60);
+            write(socket, "500 Interal Server Error\n\nNão foi possível alocar a aplicação.", 61);
             printf("requisição encerrada.\n");
             close(socket);
 
@@ -282,7 +282,7 @@ void *request_handler(void *arg)
         HttpResponse *httpResponse = parse(parser, code->valuestring, atoi(timer->valuestring), strtod(delay->valuestring, NULL), atoi(mode->valuestring));
 
         // retorna o resultado da operação
-        char *text = httpResponseToText(httpResponse);
+        char *text = httpResponse_to_string(httpResponse);
         write(socket, text, strlen(text));
         printf("%s\n", httpResponse->message);
 
@@ -292,9 +292,9 @@ void *request_handler(void *arg)
         }
 
         free(text);
-        freeHttpResponse(httpResponse);
+        httpResponse_free(httpResponse);
+        parser_free(parser);
         cJSON_Delete(json);
-        freeParser(parser);
     }
     else
     {

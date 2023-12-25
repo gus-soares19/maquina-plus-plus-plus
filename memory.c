@@ -3,24 +3,24 @@
 typedef struct TokenNode
 {
     Token *token;
-    int pos;
+    int position;
     struct TokenNode *next;
 } TokenNode;
 
 typedef struct
 {
     TokenNode *head;
-    int pos;
+    int position;
 
 } Memory;
 
-void initializeMemory(Memory *memory)
+void memory_init(Memory *memory)
 {
-    memory->pos = 0;
+    memory->position = 0;
     memory->head = NULL;
 }
 
-void freeMemory(Memory *memory)
+void memory_free(Memory *memory)
 {
     TokenNode *current = memory->head;
     TokenNode *next = NULL;
@@ -28,7 +28,7 @@ void freeMemory(Memory *memory)
     while (current != NULL)
     {
         next = current->next;
-        freeToken(current->token);
+        token_free(current->token);
         free(current);
         current = next;
     }
@@ -36,7 +36,7 @@ void freeMemory(Memory *memory)
     memory = NULL;
 }
 
-TokenNode *getTokenAt(int pos, Memory *memory)
+TokenNode *get_token_at(int position, Memory *memory)
 {
     if (memory->head == NULL)
     {
@@ -44,7 +44,7 @@ TokenNode *getTokenAt(int pos, Memory *memory)
     }
 
     TokenNode *tokenNode = memory->head;
-    while (tokenNode->pos < pos && tokenNode != NULL)
+    while (tokenNode->position < position && tokenNode != NULL)
     {
         tokenNode = tokenNode->next;
     }
@@ -52,16 +52,16 @@ TokenNode *getTokenAt(int pos, Memory *memory)
     return tokenNode;
 }
 
-void addToken(Token *token, Memory *memory)
+void add_token(Token *token, Memory *memory)
 {
-    TokenNode *newNode = (TokenNode *)malloc(sizeof(TokenNode));
-    newNode->token = token;
-    newNode->next = NULL;
-    newNode->pos = memory->pos++;
+    TokenNode *new_tokenNode = (TokenNode *)malloc(sizeof(TokenNode));
+    new_tokenNode->token = token;
+    new_tokenNode->next = NULL;
+    new_tokenNode->position = memory->position++;
 
     if (memory->head == NULL)
     {
-        memory->head = newNode;
+        memory->head = new_tokenNode;
     }
     else
     {
@@ -71,6 +71,6 @@ void addToken(Token *token, Memory *memory)
             current = current->next;
         }
 
-        current->next = newNode;
+        current->next = new_tokenNode;
     }
 }

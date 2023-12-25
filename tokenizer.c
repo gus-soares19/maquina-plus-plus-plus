@@ -8,7 +8,7 @@ typedef struct
     char *error;
 } Tokenizer;
 
-void initializeTokenizer(Tokenizer *tokenizer)
+void tokenizer_init(Tokenizer *tokenizer)
 {
     tokenizer->position = 0;
     tokenizer->input = (char *)malloc(1024 * sizeof(char));
@@ -18,7 +18,7 @@ void initializeTokenizer(Tokenizer *tokenizer)
     strcpy(tokenizer->error, "");
 }
 
-void freeTokenizer(Tokenizer *tokenizer)
+void tokenizer_free(Tokenizer *tokenizer)
 {
     free(tokenizer->input);
     free(tokenizer->error);
@@ -26,24 +26,24 @@ void freeTokenizer(Tokenizer *tokenizer)
     tokenizer = NULL;
 }
 
-void setPosition(Tokenizer *tokenizer, int pos)
+void set_position(Tokenizer *tokenizer, int pos)
 {
     tokenizer->position = pos;
 }
 
-void setInput(Tokenizer *tokenizer, char *input)
+void set_input(Tokenizer *tokenizer, char *input)
 {
     strcpy(tokenizer->input, input);
-    setPosition(tokenizer, 0);
+    set_position(tokenizer, 0);
 }
 
-int getNextState(unsigned char c, int state)
+int get_next_state(unsigned char c, int state)
 {
     int next = SCANNER_TABLE[state][c];
     return next;
 }
 
-int getTokenForState(int state)
+int get_token_by_state(int state)
 {
     if (state < 0 || state >= (sizeof(TOKEN_STATE) / sizeof(TOKEN_STATE[0])))
     {
@@ -53,7 +53,7 @@ int getTokenForState(int state)
     return TOKEN_STATE[state];
 }
 
-int lookupToken(int base, const char *key)
+int lookup_token(int base, const char *key)
 {
     int start = SPECIAL_CASES_INDEXES[base];
     int end = SPECIAL_CASES_INDEXES[base + 1] - 1;
@@ -80,14 +80,14 @@ int lookupToken(int base, const char *key)
     return base;
 }
 
-bool hasInput(Tokenizer *tokenizer)
+bool has_input(Tokenizer *tokenizer)
 {
     return tokenizer->position < strlen(tokenizer->input);
 }
 
-char getNextChar(Tokenizer *tokenizer)
+char get_next_char(Tokenizer *tokenizer)
 {
-    if (hasInput(tokenizer))
+    if (has_input(tokenizer))
     {
         return tokenizer->input[tokenizer->position++];
     }
@@ -99,22 +99,22 @@ char getNextChar(Tokenizer *tokenizer)
 
 char *substring(const char *str, int start, int end)
 {
-    int substringLength = end - start;
-    char *result = (char *)malloc((substringLength + 1) * sizeof(char));
+    int substring_length = end - start;
+    char *result = (char *)malloc((substring_length + 1) * sizeof(char));
     if (result == NULL)
     {
         return NULL;
     }
 
-    strncpy(result, str + start, substringLength);
-    result[substringLength] = '\0';
+    strncpy(result, str + start, substring_length);
+    result[substring_length] = '\0';
 
     return result;
 }
 
-Token *getNextToken(Tokenizer *tokenizer)
+Token *get_next_token(Tokenizer *tokenizer)
 {
-    if (!hasInput(tokenizer))
+    if (!has_input(tokenizer))
     {
         return NULL;
     }
@@ -122,14 +122,14 @@ Token *getNextToken(Tokenizer *tokenizer)
     int start = tokenizer->position;
 
     int state = 0;
-    int lastState = 0;
-    int endState = -1;
+    int last_state = 0;
+    int end_state = -1;
     int end = -1;
 
-    while (hasInput(tokenizer))
+    while (has_input(tokenizer))
     {
-        lastState = state;
-        state = getNextState(getNextChar(tokenizer), state);
+        last_state = state;
+        state = get_next_state(get_next_char(tokenizer), state);
 
         if (state < 0)
         {
@@ -137,31 +137,31 @@ Token *getNextToken(Tokenizer *tokenizer)
         }
         else
         {
-            if (getTokenForState(state) >= 0)
+            if (get_token_by_state(state) >= 0)
             {
-                endState = state;
+                end_state = state;
                 end = tokenizer->position;
             }
         }
     }
 
-    if (endState < 0 || (endState != state && getTokenForState(lastState) == -2))
+    if (end_state < 0 || (end_state != state && get_token_by_state(last_state) == -2))
     {
-        sprintf(tokenizer->error, "Erro na posição %d: %s.", start, SCANNER_ERROR[lastState]);
+        sprintf(tokenizer->error, "Erro na posição %d: %s.", start, SCANNER_ERROR[last_state]);
         return NULL;
     }
 
     tokenizer->position = end;
-    int token = getTokenForState(endState);
+    int token = get_token_by_state(end_state);
 
     if (token == 0)
     {
-        return getNextToken(tokenizer);
+        return get_next_token(tokenizer);
     }
     else
     {
         char *lexeme = substring(tokenizer->input, start, end);
-        token = lookupToken(token, lexeme);
-        return createToken(token, lexeme, start);
+        token = lookup_token(token, lexeme);
+        return token_create(token, lexeme, start);
     }
 }

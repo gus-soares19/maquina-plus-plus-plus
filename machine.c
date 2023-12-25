@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <stdio.h>
 
-#define REGS_SIZE 5
+#define REGISTERS 5
 #define IO_SIZE 4
 #define CALL_STACK_SIZE 4
 #define A_ASCII 65
@@ -26,24 +26,24 @@ typedef struct LabelNode
 typedef struct
 {
     Memory memory;
-    Stack callStack;
-    Stack dataStack;
-    LabelNode *labelHead;
-    int regs[REGS_SIZE];
+    Stack call_stack;
+    Stack data_stack;
+    LabelNode *labelNode_head;
+    int registers[REGISTERS];
     int inputs[IO_SIZE];
     int outputs[IO_SIZE];
-    bool flagC;
-    bool flagZ;
+    bool flag_c;
+    bool flag_z;
     int timer;
     double delay;
     char *error;
 } Machine;
 
-void initializeMachine(Machine *machine)
+void machine_init(Machine *machine)
 {
-    for (int i = 0; i < REGS_SIZE; i++)
+    for (int i = 0; i < REGISTERS; i++)
     {
-        machine->regs[i] = 0;
+        machine->registers[i] = 0;
     }
 
     for (int i = 0; i < IO_SIZE; i++)
@@ -52,28 +52,28 @@ void initializeMachine(Machine *machine)
         machine->outputs[i] = 0;
     }
 
-    initializeMemory(&(machine->memory));
-    initializeStack(&(machine->callStack));
-    initializeStack(&(machine->dataStack));
-    machine->labelHead = NULL;
-    machine->flagC = false;
-    machine->flagZ = false;
+    memory_init(&(machine->memory));
+    stack_init(&(machine->call_stack));
+    stack_init(&(machine->data_stack));
+    machine->labelNode_head = NULL;
+    machine->flag_c = false;
+    machine->flag_z = false;
     machine->error = (char *)malloc(192 * sizeof(char));
 
     strcpy(machine->error, "");
 }
 
-void setTimer(Machine *machine, int timer)
+void set_timer(Machine *machine, int timer)
 {
     machine->timer = timer;
 }
 
-void setDelay(Machine *machine, double delay)
+void set_delay(Machine *machine, double delay)
 {
     machine->delay = delay;
 }
 
-void freeLabelNodes(LabelNode *head)
+void labelNodes_free(LabelNode *head)
 {
     LabelNode *current = head;
     LabelNode *next = NULL;
@@ -87,12 +87,12 @@ void freeLabelNodes(LabelNode *head)
     }
 }
 
-void freeMachine(Machine *machine)
+void machine_free(Machine *machine)
 {
-    clear(&(machine->callStack));
-    clear(&(machine->dataStack));
-    freeLabelNodes(machine->labelHead);
-    freeMemory(&(machine->memory));
+    stack_free(&(machine->call_stack));
+    stack_free(&(machine->data_stack));
+    labelNodes_free(machine->labelNode_head);
+    memory_free(&(machine->memory));
 
     free(machine->error);
 
@@ -109,15 +109,15 @@ void delay(Machine *machine)
     }
 }
 
-TokenNode *getLabel(Token *token, Machine *machine)
+TokenNode *get_label(Token *token, Machine *machine)
 {
-    LabelNode *labelNode = machine->labelHead;
+    LabelNode *labelNode = machine->labelNode_head;
 
     while (labelNode != NULL)
     {
         if (strncmp(labelNode->label, token->lexeme, strlen(token->lexeme)) == 0)
         {
-            return getTokenAt(labelNode->memPos, &(machine->memory));
+            return get_token_at(labelNode->memPos, &(machine->memory));
         }
 
         labelNode = labelNode->next;
@@ -126,269 +126,271 @@ TokenNode *getLabel(Token *token, Machine *machine)
     return NULL;
 }
 
-void addLabel(Token *token, Machine *machine)
+void add_label(Token *token, Machine *machine)
 {
-    LabelNode *newNode = (LabelNode *)malloc(sizeof(LabelNode));
-    newNode->label = (char *)malloc(16 * sizeof(char));
-    strcpy(newNode->label, token->lexeme);
-    newNode->memPos = machine->memory.pos - 1;
-    newNode->next = NULL;
+    LabelNode *new_labelNode = (LabelNode *)malloc(sizeof(LabelNode));
+    new_labelNode->label = (char *)malloc(16 * sizeof(char));
+    strcpy(new_labelNode->label, token->lexeme);
+    new_labelNode->memPos = machine->memory.position - 1;
+    new_labelNode->next = NULL;
 
-    if (machine->labelHead == NULL)
+    if (machine->labelNode_head == NULL)
     {
-        machine->labelHead = newNode;
+        machine->labelNode_head = new_labelNode;
     }
     else
     {
-        LabelNode *current = machine->labelHead;
+        LabelNode *current = machine->labelNode_head;
         while (current->next != NULL)
         {
             current = current->next;
         }
 
-        current->next = newNode;
+        current->next = new_labelNode;
     }
 }
 
-void checkFlagC(Machine *machine, int value)
+void check_flag_c(Machine *machine, int value)
 {
-    machine->flagC = (value < MIN_INT || value > MAX_INT);
+    machine->flag_c = (value < MIN_INT || value > MAX_INT);
 }
 
-void checkFlagZ(Machine *machine, int value)
+void check_flag_z(Machine *machine, int value)
 {
-    machine->flagZ = (value == MIN_INT);
+    machine->flag_z = (value == MIN_INT);
 }
 
-int checkNumValue(int num)
+int check_value(int number)
 {
-    if (num > MAX_INT)
+    if (number > MAX_INT)
     {
-        return num -= MAX_INT;
+        return number -= MAX_INT;
     }
 
-    if (num < MIN_INT)
+    if (number < MIN_INT)
     {
-        return num += MAX_INT;
+        return number += MAX_INT;
     }
 
-    return num;
+    return number;
 }
 
-void andN(int num, char *reg, Machine *machine)
+void and_number(int number, char *register_to, Machine *machine)
 {
-    int regPos = reg[0] - A_ASCII;
-    int value = num & machine->regs[regPos];
-    machine->regs[regPos] = checkNumValue(value);
+    int register_to_position = register_to[0] - A_ASCII;
+    int value = number & machine->registers[register_to_position];
+    machine->registers[register_to_position] = check_value(value);
 
-    checkFlagC(machine, machine->regs[regPos]);
-    checkFlagZ(machine, machine->regs[regPos]);
+    check_flag_c(machine, machine->registers[register_to_position]);
+    check_flag_z(machine, machine->registers[register_to_position]);
 }
 
-void andR(char *from, char *to, Machine *machine)
+void and_register(char *register_from, char *register_to, Machine *machine)
 {
-    int regFromPos = from[0] - A_ASCII;
-    int regToPos = to[0] - A_ASCII;
-    int value = machine->regs[regToPos] & machine->regs[regFromPos];
-    machine->regs[regToPos] = checkNumValue(value);
+    int register_from_position = register_from[0] - A_ASCII;
+    int register_to_position = register_to[0] - A_ASCII;
+    int value = machine->registers[register_to_position] & machine->registers[register_from_position];
+    machine->registers[register_to_position] = check_value(value);
 
-    checkFlagC(machine, machine->regs[regToPos]);
-    checkFlagZ(machine, machine->regs[regToPos]);
+    check_flag_c(machine, machine->registers[register_to_position]);
+    check_flag_z(machine, machine->registers[register_to_position]);
 }
 
-void orN(int num, char *reg, Machine *machine)
+void or_number(int number, char *register_to, Machine *machine)
 {
-    int regPos = reg[0] - A_ASCII;
-    int value = num | machine->regs[regPos];
-    machine->regs[regPos] = checkNumValue(value);
+    int register_to_position = register_to[0] - A_ASCII;
+    int value = number | machine->registers[register_to_position];
+    machine->registers[register_to_position] = check_value(value);
 
-    checkFlagC(machine, machine->regs[regPos]);
-    checkFlagZ(machine, machine->regs[regPos]);
+    check_flag_c(machine, machine->registers[register_to_position]);
+    check_flag_z(machine, machine->registers[register_to_position]);
 }
 
-void orR(char *from, char *to, Machine *machine)
+void or_register(char *register_from, char *register_to, Machine *machine)
 {
-    int regFromPos = from[0] - A_ASCII;
-    int regToPos = to[0] - A_ASCII;
-    int value = machine->regs[regToPos] | machine->regs[regFromPos];
-    machine->regs[regToPos] = checkNumValue(value);
+    int register_from_position = register_from[0] - A_ASCII;
+    int register_to_position = register_to[0] - A_ASCII;
+    int value = machine->registers[register_to_position] | machine->registers[register_from_position];
+    machine->registers[register_to_position] = check_value(value);
 
-    checkFlagC(machine, machine->regs[regToPos]);
-    checkFlagZ(machine, machine->regs[regToPos]);
+    check_flag_c(machine, machine->registers[register_to_position]);
+    check_flag_z(machine, machine->registers[register_to_position]);
 }
 
-void xorN(int num, char *reg, Machine *machine)
+void xor_number(int number, char *register_to, Machine *machine)
 {
-    int regPos = reg[0] - A_ASCII;
-    int value = num ^ machine->regs[regPos];
-    machine->regs[regPos] = checkNumValue(value);
+    int register_to_position = register_to[0] - A_ASCII;
+    int value = number ^ machine->registers[register_to_position];
+    machine->registers[register_to_position] = check_value(value);
 
-    checkFlagC(machine, machine->regs[regPos]);
-    checkFlagZ(machine, machine->regs[regPos]);
+    check_flag_c(machine, machine->registers[register_to_position]);
+    check_flag_z(machine, machine->registers[register_to_position]);
 }
 
-void xorR(char *from, char *to, Machine *machine)
+void xor_register(char *register_from, char *register_to, Machine *machine)
 {
-    int regFromPos = from[0] - A_ASCII;
-    int regToPos = to[0] - A_ASCII;
-    int value = machine->regs[regToPos] ^ machine->regs[regFromPos];
-    machine->regs[regToPos] = checkNumValue(value);
+    int register_from_position = register_from[0] - A_ASCII;
+    int register_to_position = register_to[0] - A_ASCII;
+    int value = machine->registers[register_to_position] ^ machine->registers[register_from_position];
+    machine->registers[register_to_position] = check_value(value);
 
-    checkFlagC(machine, machine->regs[regToPos]);
-    checkFlagZ(machine, machine->regs[regToPos]);
+    check_flag_c(machine, machine->registers[register_to_position]);
+    check_flag_z(machine, machine->registers[register_to_position]);
 }
 
-void notN(int num, char *reg, Machine *machine)
+void not_number(int number, char *register_to, Machine *machine)
 {
-    int regPos = reg[0] - A_ASCII;
-    int value = ~num;
-    machine->regs[regPos] = checkNumValue(value);
+    int register_to_position = register_to[0] - A_ASCII;
+    int value = ~number;
+    machine->registers[register_to_position] = check_value(value);
 
-    checkFlagC(machine, machine->regs[regPos]);
-    checkFlagZ(machine, machine->regs[regPos]);
+    check_flag_c(machine, machine->registers[register_to_position]);
+    check_flag_z(machine, machine->registers[register_to_position]);
 }
 
-void notR(char *reg, Machine *machine)
+void not_register(char *register_to, Machine *machine)
 {
-    int regPos = reg[0] - A_ASCII;
-    int value = ~machine->regs[regPos];
-    machine->regs[regPos] = checkNumValue(value);
+    int register_to_position = register_to[0] - A_ASCII;
+    int value = ~machine->registers[register_to_position];
+    machine->registers[register_to_position] = check_value(value);
 
-    checkFlagC(machine, machine->regs[regPos]);
-    checkFlagZ(machine, machine->regs[regPos]);
+    check_flag_c(machine, machine->registers[register_to_position]);
+    check_flag_z(machine, machine->registers[register_to_position]);
 }
 
-void addN(int num, char *reg, Machine *machine)
+void add_number(int number, char *register_to, Machine *machine)
 {
-    int regPos = reg[0] - A_ASCII;
-    int value = machine->regs[0] + num;
-    machine->regs[regPos] = checkNumValue(value);
+    int register_to_position = register_to[0] - A_ASCII;
+    int value = machine->registers[0] + number;
+    machine->registers[register_to_position] = check_value(value);
 
-    checkFlagC(machine, value);
-    checkFlagZ(machine, value);
+    check_flag_c(machine, value);
+    check_flag_z(machine, value);
 }
 
-void addR(char *from, char *to, Machine *machine)
+void add_register(char *register_from, char *register_to, Machine *machine)
 {
-    int regFromPos = from[0] - A_ASCII;
-    int regToPos = to[0] - A_ASCII;
-    int value = machine->regs[0] + machine->regs[regFromPos];
-    machine->regs[regToPos] = checkNumValue(value);
+    int register_from_position = register_from[0] - A_ASCII;
+    int register_to_position = register_to[0] - A_ASCII;
+    int value = machine->registers[0] + machine->registers[register_from_position];
+    machine->registers[register_to_position] = check_value(value);
 
-    checkFlagC(machine, value);
-    checkFlagZ(machine, value);
+    check_flag_c(machine, value);
+    check_flag_z(machine, value);
 }
 
-void subN(int num, char *reg, Machine *machine)
+void sub_number(int number, char *register_to, Machine *machine)
 {
-    int regPos = reg[0] - A_ASCII;
-    int value = machine->regs[0] - num;
-    machine->regs[regPos] = checkNumValue(value);
+    int register_to_position = register_to[0] - A_ASCII;
+    int value = machine->registers[0] - number;
+    machine->registers[register_to_position] = check_value(value);
 
-    checkFlagC(machine, value);
-    checkFlagZ(machine, value);
+    check_flag_c(machine, value);
+    check_flag_z(machine, value);
 }
 
-void subR(char *from, char *to, Machine *machine)
+void sub_register(char *register_from, char *register_to, Machine *machine)
 {
-    int regFromPos = from[0] - A_ASCII;
-    int regToPos = to[0] - A_ASCII;
-    int value = machine->regs[0] - machine->regs[regFromPos];
-    machine->regs[regToPos] = checkNumValue(value);
+    int register_from_position = register_from[0] - A_ASCII;
+    int register_to_position = register_to[0] - A_ASCII;
+    int value = machine->registers[0] - machine->registers[register_from_position];
+    machine->registers[register_to_position] = check_value(value);
 
-    checkFlagC(machine, value);
-    checkFlagZ(machine, value);
+    check_flag_c(machine, value);
+    check_flag_z(machine, value);
 }
 
-void inc(char *from, char *to, Machine *machine)
+void inc(char *register_from, char *register_to, Machine *machine)
 {
-    int regFromPos = from[0] - A_ASCII;
-    int regToPos = to[0] - A_ASCII;
-    int value = machine->regs[regFromPos] + 1;
-    machine->regs[regToPos] = checkNumValue(value);
+    int register_from_position = register_from[0] - A_ASCII;
+    int register_to_position = register_to[0] - A_ASCII;
+    int value = machine->registers[register_from_position] + 1;
+    machine->registers[register_to_position] = check_value(value);
 
-    checkFlagC(machine, value);
-    checkFlagZ(machine, value);
+    check_flag_c(machine, value);
+    check_flag_z(machine, value);
 }
 
-void movN(int num, char *reg, Machine *machine)
+void mov_number(int number, char *register_to, Machine *machine)
 {
-    int regPos = reg[0] - A_ASCII;
-    machine->regs[regPos] = checkNumValue(num);
+    int register_to_position = register_to[0] - A_ASCII;
+    machine->registers[register_to_position] = check_value(number);
 
-    checkFlagC(machine, num);
-    checkFlagZ(machine, num);
+    check_flag_c(machine, number);
+    check_flag_z(machine, number);
 }
 
-void movR(char *from, char *to, Machine *machine)
+void mov_register(char *register_from, char *register_to, Machine *machine)
 {
-    int regFromPos = from[0] - A_ASCII;
-    int regToPos = to[0] - A_ASCII;
-    machine->regs[regToPos] = checkNumValue(machine->regs[regFromPos]);
+    int register_from_position = register_from[0] - A_ASCII;
+    int register_to_position = register_to[0] - A_ASCII;
+    machine->registers[register_to_position] = check_value(machine->registers[register_from_position]);
 
-    checkFlagC(machine, machine->regs[regFromPos]);
-    checkFlagZ(machine, machine->regs[regFromPos]);
+    check_flag_c(machine, machine->registers[register_from_position]);
+    check_flag_z(machine, machine->registers[register_from_position]);
 }
 
-void movO(char *from, char *out, Machine *machine)
+void mov_output(char *register_from, char *output, Machine *machine)
 {
-    int outPos;
+    int output_addr;
     char *command = "i2c set -b";
     char buffer[100];
 
-    sscanf(out, "OUT%d", &outPos);
-    int regPos = from[0] - A_ASCII;
+    sscanf(output, "OUT%d", &output_addr);
+    int register_from_position = register_from[0] - A_ASCII;
 
-    sprintf(buffer, "%s %d -a 0x%d 0x%X", command, CONFIG_EXAMPLES_M3P_I2C_BUS, (MIN_OUT_ADDR + outPos), machine->outputs[outPos]);
+    sprintf(buffer, "%s %d -a 0x%d 0x%X", command, CONFIG_EXAMPLES_M3P_I2C_BUS, (MIN_OUT_ADDR + output_addr), machine->outputs[output_addr]);
 
     if (system(buffer) == 0)
     {
-        machine->outputs[outPos] = machine->regs[regPos];
+        machine->outputs[output_addr] = machine->registers[register_from_position];
     }
     else
     {
-        printf("Não foi possível ler a porta OUT%d.\n", outPos);
+        printf("Não foi possível ler a porta OUT%d.\n", output_addr);
     }
 }
 
-void movI(char *in, char *to, Machine *machine)
+void mov_input(char *input, char *register_to, Machine *machine)
 {
-    int inPos, value;
-    FILE *fp;
+    int input_addr, value;
+    FILE *file;
     char *command = "i2c get -b 0 -a";
     char buffer[100], response[100];
 
-    sscanf(in, "IN%d", &inPos);
-    int regPos = to[0] - A_ASCII;
+    sscanf(input, "IN%d", &input_addr);
+    int register_to_position = register_to[0] - A_ASCII;
 
-    sprintf(buffer, "%s 0x%d", command, (MIN_IN_ADDR + inPos));
+    sprintf(buffer, "%s 0x%d", command, (MIN_IN_ADDR + input_addr));
 
-    fp = popen(buffer, "r");
-    if (fp == NULL)
+    file = popen(buffer, "r");
+    if (file == NULL)
     {
-        printf("Não foi possível ler a porta IN%d.\n", inPos);
+        printf("Não foi possível ler a porta IN%d.\n", input_addr);
     }
     else
     {
-        while (fgets(response, sizeof(response), fp) != NULL)
+        while (fgets(response, sizeof(response), file) != NULL)
         {
             if (sscanf(response, "READ %*s %*s %*s %*s %*s %*s Value: %d", &value) == 1)
             {
-                machine->regs[regPos] = machine->inputs[inPos] = (int)value;
+                machine->registers[register_to_position] = machine->inputs[input_addr] = (int)value;
             }
             else
             {
-                printf("Não foi possível ler a porta IN%d.\n", inPos);
+                printf("Não foi possível ler a porta IN%d.\n", input_addr);
             }
         }
-        pclose(fp);
+        pclose(file);
     }
 }
 
 HttpResponse *execute(Machine *machine)
 {
-    time_t startTime = time(NULL);
+    time_t start_time = time(NULL);
     TokenNode *current = machine->memory.head;
+    char *register_from, *register_to, *input, *output;
+    int number, position;
 
     while (current != NULL)
     {
@@ -396,125 +398,169 @@ HttpResponse *execute(Machine *machine)
         {
         case 14: // ADD
             current = current->next;
-            if (current->token->type == 7) // NUM
+            if (current->token->type == 7) // NUMBER
             {
-                int num = strtol(current->token->lexeme, NULL, 16);
+                number = strtol(current->token->lexeme, NULL, 16);
+
                 current = current->next;
-                addN(num, current->token->lexeme, machine);
+                register_to = current->token->lexeme;
+
+                add_number(number, register_to, machine);
             }
-            else // REG
+            else // REGISTER
             {
-                char *from = current->token->lexeme;
+                register_from = current->token->lexeme;
+
                 current = current->next;
-                addR(from, current->token->lexeme, machine);
+                register_to = current->token->lexeme;
+
+                add_register(register_from, register_to, machine);
             }
             break;
 
         case 15: // SUB
             current = current->next;
-            if (current->token->type == 7) // NUM
+            if (current->token->type == 7) // NUMBER
             {
-                int num = strtol(current->token->lexeme, NULL, 16);
+                number = strtol(current->token->lexeme, NULL, 16);
+
                 current = current->next;
-                subN(num, current->token->lexeme, machine);
+                register_to = current->token->lexeme;
+
+                sub_number(number, register_to, machine);
             }
-            else // REG
+            else // REGISTER
             {
-                char *from = current->token->lexeme;
+                register_from = current->token->lexeme;
+
                 current = current->next;
-                subR(from, current->token->lexeme, machine);
+                register_to = current->token->lexeme;
+
+                sub_register(register_from, register_to, machine);
             }
             break;
 
         case 16: // AND
             current = current->next;
-            if (current->token->type == 7) // NUM
+            if (current->token->type == 7) // NUMBER
             {
-                int num = strtol(current->token->lexeme, NULL, 16);
+                number = strtol(current->token->lexeme, NULL, 16);
+
                 current = current->next;
-                andN(num, current->token->lexeme, machine);
+                register_to = current->token->lexeme;
+
+                and_number(number, register_to, machine);
             }
-            else // REG
+            else // REGISTER
             {
-                char *from = current->token->lexeme;
+                register_from = current->token->lexeme;
+
                 current = current->next;
-                andR(from, current->token->lexeme, machine);
+                register_to = current->token->lexeme;
+
+                and_register(register_from, register_to, machine);
             }
             break;
 
         case 17: // OR
             current = current->next;
-            if (current->token->type == 7) // NUM
+            if (current->token->type == 7) // NUMBER
             {
-                int num = strtol(current->token->lexeme, NULL, 16);
+                number = strtol(current->token->lexeme, NULL, 16);
+
                 current = current->next;
-                orN(num, current->token->lexeme, machine);
+                register_to = current->token->lexeme;
+
+                or_number(number, register_to, machine);
             }
-            else // REG
+            else // REGISTER
             {
-                char *from = current->token->lexeme;
+                register_from = current->token->lexeme;
+
                 current = current->next;
-                orR(from, current->token->lexeme, machine);
+                register_to = current->token->lexeme;
+
+                or_register(register_from, register_to, machine);
             }
             break;
 
         case 18: // XOR
             current = current->next;
-            if (current->token->type == 7) // NUM
+            if (current->token->type == 7) // NUMBER
             {
-                int num = strtol(current->token->lexeme, NULL, 16);
+                number = strtol(current->token->lexeme, NULL, 16);
+
                 current = current->next;
-                xorN(num, current->token->lexeme, machine);
+                register_to = current->token->lexeme;
+
+                xor_number(number, register_to, machine);
             }
-            else // REG
+            else // REGISTER
             {
-                char *from = current->token->lexeme;
+                register_from = current->token->lexeme;
+
                 current = current->next;
-                xorR(from, current->token->lexeme, machine);
+                register_to = current->token->lexeme;
+
+                xor_register(register_from, register_to, machine);
             }
             break;
 
         case 19: // NOT
             current = current->next;
-            if (current->token->type == 7) // NUM
+            if (current->token->type == 7) // NUMBER
             {
-                int num = strtol(current->token->lexeme, NULL, 16);
+                number = strtol(current->token->lexeme, NULL, 16);
+
                 current = current->next;
-                notN(num, current->token->lexeme, machine);
+                register_to = current->token->lexeme;
+
+                not_number(number, register_to, machine);
             }
-            else // REG
+            else // REGISTER
             {
-                notR(current->token->lexeme, machine);
+                register_to = current->token->lexeme;
+
+                not_register(register_to, machine);
             }
             break;
 
         case 20: // MOV
             current = current->next;
-            if (current->token->type == 7) // NUM
+            if (current->token->type == 7) // NUMBER
             {
-                int num = strtol(current->token->lexeme, NULL, 16);
+                number = strtol(current->token->lexeme, NULL, 16);
+
                 current = current->next;
-                movN(num, current->token->lexeme, machine);
+                register_to = current->token->lexeme;
+
+                mov_number(number, register_to, machine);
             }
-            else if (current->token->type == 11) // IN
+            else if (current->token->type == 11) // INPUT
             {
-                char *in = current->token->lexeme;
+                input = current->token->lexeme;
+
+                current = current->next;
+                register_to = current->token->lexeme;
+
+                mov_input(input, register_to, machine);
+            }
+            else // REGISTER
+            {
+                register_from = current->token->lexeme;
                 current = current->next;
 
-                movI(in, current->token->lexeme, machine);
-            }
-            else // REG
-            {
-                char *from = current->token->lexeme;
-                current = current->next;
-
-                if (current->token->type == 12) // OUT
+                if (current->token->type == 12) // OUTPUT
                 {
-                    movO(from, current->token->lexeme, machine);
+                    output = current->token->lexeme;
+
+                    mov_output(register_from, output, machine);
                 }
-                else // REG
+                else // REGISTER
                 {
-                    movR(from, current->token->lexeme, machine);
+                    register_to = current->token->lexeme;
+
+                    mov_register(register_from, register_to, machine);
                 }
             }
             break;
@@ -522,79 +568,86 @@ HttpResponse *execute(Machine *machine)
         case 21: // INC
             current = current->next;
 
-            char *from = current->token->lexeme;
+            register_from = current->token->lexeme;
+
             current = current->next;
-            inc(from, current->token->lexeme, machine);
+            register_to = current->token->lexeme;
+
+            inc(register_from, register_to, machine);
             break;
 
         case 22: // JMP
             current = current->next;
-            current = getLabel(current->token, machine);
+            current = get_label(current->token, machine);
             break;
 
         case 23: // JMPC
             current = current->next;
 
-            if (machine->flagC == true)
+            if (machine->flag_c == true)
             {
-                current = getLabel(current->token, machine);
+                current = get_label(current->token, machine);
             }
             break;
 
         case 24: // JMPZ
             current = current->next;
 
-            if (machine->flagZ == true)
+            if (machine->flag_z == true)
             {
-                current = getLabel(current->token, machine);
+                current = get_label(current->token, machine);
             }
             break;
 
         case 25: // CALL
-            if (!isFull(&(machine->callStack)))
+            if (!is_full(&(machine->call_stack)))
             {
                 current = current->next;
-                push(&(machine->callStack), current->pos);
-                current = getLabel(current->token, machine);
+                position = current->position;
+
+                push(&(machine->call_stack), position);
+                current = get_label(current->token, machine);
             }
             else
             {
                 strcpy(machine->error, "StackOverflow: Pilha de chamadas sobrecarregada.");
-                break;
             }
             break;
 
         case 26: // RET
-            if (!isEmpty(&(machine->callStack)))
+            if (!is_empty(&(machine->call_stack)))
             {
-                current = getTokenAt(pop(&(machine->callStack)), &(machine->memory));
+                current = get_token_at(pop(&(machine->call_stack)), &(machine->memory));
             }
             else
             {
                 strcpy(machine->error, "StackUnderflow: Pilha de chamadas vazia.");
-                break;
             }
             break;
 
         case 27: // PUSH
-            if (!isFull(&(machine->dataStack)))
+            if (!is_full(&(machine->data_stack)))
             {
-                int num = strtol(current->token->lexeme, NULL, 16);
-                push(&(machine->dataStack), num);
+                current = current->next;
+                number = strtol(current->token->lexeme, NULL, 16);
+
+                push(&(machine->data_stack), number);
             }
             else
             {
                 strcpy(machine->error, "StackOverflow: Pilha de dados sobrecarregada.");
-
-                break;
             }
             break;
 
         case 28: // POP
-
-            if (!isEmpty(&(machine->dataStack)))
+            if (!is_empty(&(machine->data_stack)))
             {
-                pop(&(machine->dataStack));
+                number = pop(&(machine->data_stack));
+
+                current = current->next;
+                register_to = current->token->lexeme;
+
+                mov_number(number, register_to, machine);
             }
             else
             {
@@ -613,18 +666,18 @@ HttpResponse *execute(Machine *machine)
             break;
         }
 
-        // interrompe a execucao se o tempo limite exceder
-        time_t currentTime = time(NULL);
-        if ((currentTime - startTime) >= machine->timer)
-        {
-            strcpy(machine->error, "Tempo limite atingido. Programa encerrado.");
-            break;
-        }
-
         // interrompe a execucao se current for NULL
         if (current == NULL)
         {
             strcpy(machine->error, "Execução interrompida devido a erro inesperado.");
+            break;
+        }
+
+        // interrompe a execucao se o tempo limite exceder
+        time_t current_time = time(NULL);
+        if ((current_time - start_time) >= machine->timer)
+        {
+            strcpy(machine->error, "Tempo limite atingido. Programa encerrado.");
             break;
         }
 
@@ -635,8 +688,8 @@ HttpResponse *execute(Machine *machine)
 
     if (strlen(machine->error) != 0)
     {
-        return createHttpResponse(machine->error, 400, "Bad Request");
+        return httpResponse_create(machine->error, 400, "Bad Request");
     }
 
-    return createHttpResponse("Execução concluída com suscesso.", 200, "OK");
+    return httpResponse_create("Execução concluída com suscesso.", 200, "OK");
 }

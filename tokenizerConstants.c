@@ -42,7 +42,7 @@ char* SPECIAL_CASES_KEYS[15] = {  "ADD", "AND", "CALL", "INC", "JMP", "JMPC", "J
 
 int SPECIAL_CASES_VALUES[15] = {  14, 16, 25, 21, 22, 23, 24, 20, 19, 17, 28, 27, 26, 15, 18 };
 
-int MEMORY_CASES_VALUES[25] = {29, 13, 2, 3, 4, 5, 6, 7, 14, 16, 25, 21, 22, 23, 24, 20, 19, 17, 28, 27, 26, 15, 18, 12, 11};
+int MEMORY_CASES_VALUES[27] = {29, 13, 2, 3, 4, 5, 6, 7, 14, 16, 25, 21, 22, 23, 24, 20, 19, 17, 28, 27, 26, 15, 18, 12, 11, 10, 8};
 
 char* SCANNER_ERROR[32] =
     {

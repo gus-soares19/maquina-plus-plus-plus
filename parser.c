@@ -8,40 +8,40 @@
 
 typedef struct
 {
-    Stack _stack;
-    Token *_currentToken;
-    Token *_previousToken;
-    Tokenizer _tokenizer;
-    Contextualizer _contextualizer;
-    Machine _machine;
+    Stack stack;
+    Token *current_token;
+    Token *previous_token;
+    Tokenizer tokenizer;
+    Contextualizer contextualizer;
+    Machine machine;
     char *error;
 } Parser;
 
-bool isTerminal(int x)
+bool is_terminal(int x)
 {
     return x < FIRST_NON_TERMINAL;
 }
 
-bool isNonTerminal(int x)
+bool is_non_terminal(int x)
 {
     return x >= FIRST_NON_TERMINAL && x < FIRST_SEMANTIC_ACTION;
 }
 
-bool pushProduction(Parser *parser, int topStack, int tokenInput)
+bool push_production(Parser *parser, int topStack, int tokenInput)
 {
-    int p = PARSER_TABLE[topStack - FIRST_NON_TERMINAL][tokenInput - 1];
+    int position = PARSER_TABLE[topStack - FIRST_NON_TERMINAL][tokenInput - 1];
 
-    if (p >= 0)
+    if (position >= 0)
     {
-        int size = sizeof(PRODUCTIONS) / sizeof(PRODUCTIONS[p]);
-        int production[size];
-        memcpy(production, PRODUCTIONS[p], size);
+        int length = sizeof(PRODUCTIONS) / sizeof(PRODUCTIONS[position]);
+        int production[length];
+        memcpy(production, PRODUCTIONS[position], length);
 
         for (int i = 7; i >= 0; i--)
         {
             if (production[i] != 0 || i == 0)
             {
-                push(&(parser->_stack), production[i]);
+                push(&(parser->stack), production[i]);
             }
         }
         return true;
@@ -52,10 +52,10 @@ bool pushProduction(Parser *parser, int topStack, int tokenInput)
     }
 }
 
-bool isValid(Token *token)
+bool is_valid(Token *token)
 {
-    int size = sizeof(MEMORY_CASES_VALUES) / sizeof(MEMORY_CASES_VALUES[0]);
-    for (size_t i = 0; i < size; i++)
+    int length = sizeof(MEMORY_CASES_VALUES) / sizeof(MEMORY_CASES_VALUES[0]);
+    for (size_t i = 0; i < length; i++)
     {
         if (token->type == MEMORY_CASES_VALUES[i])
         {
@@ -68,44 +68,44 @@ bool isValid(Token *token)
 
 bool step(Parser *parser)
 {
-    if (parser->_currentToken == NULL)
+    if (parser->current_token == NULL)
     {
-        int pos = 0;
-        if (parser->_previousToken != NULL)
+        int position = 0;
+        if (parser->previous_token != NULL)
         {
-            pos = parser->_previousToken->position + strlen(parser->_previousToken->lexeme);
+            position = parser->previous_token->position + strlen(parser->previous_token->lexeme);
         }
 
-        parser->_currentToken = createToken(DOLLAR, "$", pos);
+        parser->current_token = token_create(DOLLAR, "$", position);
     }
 
-    int x = pop(&(parser->_stack));
-    int a = parser->_currentToken->type;
+    int x = pop(&(parser->stack));
+    int a = parser->current_token->type;
 
     if (x == EPSILON)
     {
         return false;
     }
-    else if (isTerminal(x))
+    else if (is_terminal(x))
     {
         if (x == a)
         {
-            if (isEmpty(&(parser->_stack)))
+            if (is_empty(&(parser->stack)))
             {
                 return true;
             }
             else
             {
-                parser->_previousToken = parser->_currentToken;
-                parser->_currentToken = getNextToken(&(parser->_tokenizer));
+                parser->previous_token = parser->current_token;
+                parser->current_token = get_next_token(&(parser->tokenizer));
 
-                if (parser->_currentToken != NULL && isValid(parser->_currentToken))
+                if (parser->current_token != NULL && is_valid(parser->current_token))
                 {
-                    addToken(parser->_currentToken, &(parser->_machine.memory));
+                    add_token(parser->current_token, &(parser->machine.memory));
 
-                    if (parser->_currentToken->type == 29)
+                    if (parser->current_token->type == 29)
                     {
-                        addLabel(parser->_currentToken, &(parser->_machine));
+                        add_label(parser->current_token, &(parser->machine));
                     }
                 }
 
@@ -114,13 +114,13 @@ bool step(Parser *parser)
         }
         else
         {
-            sprintf(parser->error, "Erro na posição %d: %s.", parser->_currentToken->position, PARSER_ERROR[x]);
+            sprintf(parser->error, "Erro na posição %d: %s.", parser->current_token->position, PARSER_ERROR[x]);
             return true;
         }
     }
-    else if (isNonTerminal(x))
+    else if (is_non_terminal(x))
     {
-        if (pushProduction(parser, x, a))
+        if (push_production(parser, x, a))
         {
             return false;
         }
@@ -132,35 +132,32 @@ bool step(Parser *parser)
     }
     else
     {
-        executeAction(&(parser->_contextualizer), x - FIRST_SEMANTIC_ACTION, parser->_previousToken);
+        execute_action(&(parser->contextualizer), x - FIRST_SEMANTIC_ACTION, parser->previous_token);
         return false;
     }
 }
 
-void initializeParser(Parser *parser)
+void parser_init(Parser *parser)
 {
-    initializeTokenizer(&(parser->_tokenizer));
-    initializeContextualizer(&(parser->_contextualizer));
-    initializeStack(&(parser->_stack));
-    initializeMachine(&(parser->_machine));
-    clear(&(parser->_stack));
-    push(&(parser->_stack), DOLLAR);
-    push(&(parser->_stack), START_SYMBOL);
+    tokenizer_init(&(parser->tokenizer));
+    contextualizer_init(&(parser->contextualizer));
+    stack_init(&(parser->stack));
+    machine_init(&(parser->machine));
 
     parser->error = (char *)malloc(192 * sizeof(char));
 
     strcpy(parser->error, "");
 
-    parser->_currentToken = NULL;
-    parser->_previousToken = NULL;
+    parser->current_token = NULL;
+    parser->previous_token = NULL;
 }
 
-void freeParser(Parser *parser)
+void parser_free(Parser *parser)
 {
-    freeMachine(&(parser->_machine));
-    freeContextualizer(&(parser->_contextualizer));
-    freeTokenizer(&(parser->_tokenizer));
-    clear(&(parser->_stack));
+    machine_free(&(parser->machine));
+    contextualizer_free(&(parser->contextualizer));
+    tokenizer_free(&(parser->tokenizer));
+    stack_free(&(parser->stack));
     free(parser->error);
     free(parser);
 
@@ -170,44 +167,47 @@ void freeParser(Parser *parser)
 
 HttpResponse *parse(Parser *parser, char *code, int timer, double delay, int mode)
 {
-    setInput(&(parser->_tokenizer), code);
-    setTimer(&(parser->_machine), timer);
-    setDelay(&(parser->_machine), delay);
+    set_input(&(parser->tokenizer), code);
+    set_timer(&(parser->machine), timer);
+    set_delay(&(parser->machine), delay);
 
-    parser->_currentToken = getNextToken(&(parser->_tokenizer));
+    push(&(parser->stack), DOLLAR);
+    push(&(parser->stack), START_SYMBOL);
 
-    if (parser->_currentToken != NULL && isValid(parser->_currentToken))
+    parser->current_token = get_next_token(&(parser->tokenizer));
+
+    if (parser->current_token != NULL && is_valid(parser->current_token))
     {
-        addToken(parser->_currentToken, &(parser->_machine.memory));
+        add_token(parser->current_token, &(parser->machine.memory));
 
-        if (parser->_currentToken->type == 29)
+        if (parser->current_token->type == 29)
         {
-            addLabel(parser->_currentToken, &(parser->_machine));
+            add_label(parser->current_token, &(parser->machine));
         }
     }
 
     while (!step(parser))
     {
-        if (strlen(parser->_tokenizer.error) != 0 ||
-            strlen(parser->_contextualizer.error) != 0 ||
+        if (strlen(parser->tokenizer.error) != 0 ||
+            strlen(parser->contextualizer.error) != 0 ||
             strlen(parser->error) != 0)
         {
             break;
         };
     }
 
-    if (strlen(parser->_tokenizer.error) != 0)
+    if (strlen(parser->tokenizer.error) != 0)
     {
-        return createHttpResponse(parser->_tokenizer.error, 400, "Bad Request");
+        return httpResponse_create(parser->tokenizer.error, 400, "Bad Request");
     }
     if (strlen(parser->error) != 0)
     {
-        return createHttpResponse(parser->error, 400, "Bad Request");
+        return httpResponse_create(parser->error, 400, "Bad Request");
     }
-    if (strlen(parser->_contextualizer.error) != 0)
+    if (strlen(parser->contextualizer.error) != 0)
     {
-        return createHttpResponse(parser->_contextualizer.error, 400, "Bad Request");
+        return httpResponse_create(parser->contextualizer.error, 400, "Bad Request");
     }
 
-    return mode == 0 ? createHttpResponse("Compilado com sucesso.", 200, "OK") : execute(&(parser->_machine));
+    return mode == 0 ? httpResponse_create("Compilado com sucesso.", 200, "OK") : execute(&(parser->machine));
 }

@@ -1,40 +1,41 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#define INITIAL_SIZE 100
 
-typedef struct NodeList
+#define INITIAL_LENGTH 100
+
+typedef struct ListNode
 {
     int value;
-    struct NodeList *next;
-} NodeList;
+    struct ListNode *next;
+} ListNode;
 
 typedef struct
 {
     char *key;
-    NodeList *values;
+    ListNode *listNodes_head;
 } List;
 
 typedef struct
 {
-    List *list[INITIAL_SIZE];
+    List *list[INITIAL_LENGTH];
     int top;
 } HashMapList;
 
-void initializeHashMapList(HashMapList *hashMapList)
+void hashMapList_init(HashMapList *hashMapList)
 {
     hashMapList->top = -1;
 
-    for (int i = 0; i < INITIAL_SIZE; i++)
+    for (int i = 0; i < INITIAL_LENGTH; i++)
     {
         hashMapList->list[i] = NULL;
     }
 }
 
-void freeList(List *list)
+void list_free(List *list)
 {
-    NodeList *current = list->values;
-    NodeList *next = NULL;
+    ListNode *current = list->listNodes_head;
+    ListNode *next = NULL;
 
     while (current != NULL)
     {
@@ -47,17 +48,17 @@ void freeList(List *list)
     list = NULL;
 }
 
-void freeHashMapList(HashMapList *hashMapList)
+void hashMapList_free(HashMapList *hashMapList)
 {
     for (int i = 0; i < hashMapList->top; i++)
     {
-        freeList(hashMapList->list[i]);
+        list_free(hashMapList->list[i]);
     }
 
     hashMapList = NULL;
 }
 
-List *getList(HashMapList *hashMapList, const char *key)
+List *get_list(HashMapList *hashMapList, const char *key)
 {
     for (int i = 0; i < 100; i++)
     {
@@ -73,54 +74,35 @@ List *getList(HashMapList *hashMapList, const char *key)
     return NULL;
 }
 
-void insertValue(HashMapList *hashMapList, char *key, int value)
+void hashMapList_put(HashMapList *hashMapList, char *key, int value)
 {
-    if (hashMapList->top == -1 || getList(hashMapList, key) == NULL)
+    if (hashMapList->top == -1 || get_list(hashMapList, key) == NULL)
     {
-        List *newList = hashMapList->list[hashMapList->top++];
-        newList = (List *)malloc(sizeof(List));
+        List *new_list = hashMapList->list[hashMapList->top++];
+        new_list = (List *)malloc(sizeof(List));
 
-        newList->key = (char *)malloc(16 * sizeof(char));
-        strcpy(newList->key, key);
-        newList->values = NULL;
+        new_list->key = (char *)malloc(16 * sizeof(char));
+        strcpy(new_list->key, key);
+        new_list->listNodes_head = NULL;
 
-        NodeList *newNodeList = (NodeList *)malloc(sizeof(NodeList));
-        newNodeList->value = value;
-        newNodeList->next = newList->values;
-        newList->values = newNodeList;
+        ListNode *new_listNode = (ListNode *)malloc(sizeof(ListNode));
+        new_listNode->value = value;
+        new_listNode->next = new_list->listNodes_head;
+        new_list->listNodes_head = new_listNode;
 
-        hashMapList->list[hashMapList->top] = newList;
+        hashMapList->list[hashMapList->top] = new_list;
     }
     else
     {
-        List *list = getList(hashMapList, key);
+        List *list = get_list(hashMapList, key);
 
         if (list != NULL)
         {
-            NodeList *newNodeList = (NodeList *)malloc(sizeof(NodeList));
+            ListNode *new_listNode = (ListNode *)malloc(sizeof(ListNode));
             ;
-            newNodeList->value = value;
-            newNodeList->next = list->values;
-            list->values = newNodeList;
+            new_listNode->value = value;
+            new_listNode->next = list->listNodes_head;
+            list->listNodes_head = new_listNode;
         }
     }
-}
-
-int getListSize(List *list)
-{
-    if (list == NULL)
-    {
-        return 0;
-    }
-
-    int size = 0;
-    NodeList *current = list->values;
-
-    while (current != NULL)
-    {
-        size++;
-        current = current->next;
-    }
-
-    return size;
 }
