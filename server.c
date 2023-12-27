@@ -1,17 +1,17 @@
 #include <nuttx/config.h>
-
+#include <netutils/cJSON.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
+#include <stdbool.h>
+#include <ctype.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <pthread.h>
 #include "httpResponse.c"
 #include "parser.c"
-
-#include <unistd.h>
-#include "netutils/cJSON.h"
-#include <pthread.h>
 
 #define PORT 8080
 #define MAX_CONNECTIONS 20
@@ -93,7 +93,7 @@ char *get_html_file(const char *file_name)
 
     // Obtém o tamanho do arquivo
     fseek(file, 0, SEEK_END);
-    long length = ftell(file);
+    long int length = ftell(file);
     rewind(file);
 
     // Aloca memória para armazenar o conteúdo do arquivo
@@ -107,7 +107,7 @@ char *get_html_file(const char *file_name)
 
     // Lê o conteúdo do arquivo
     size_t bytes = fread(content, sizeof(char), length, file);
-    if (bytes != length)
+    if (bytes != (size_t)length)
     {
         fprintf(stderr, "Erro ao ler o conteúdo do arquivo.\n");
         fclose(file);
@@ -310,7 +310,7 @@ void *request_handler(void *arg)
     pthread_exit(NULL);
 }
 
-int main(int argc, char *argv[])
+int main(void)
 {
     int server_fd, new_socket;
     struct sockaddr_in address;

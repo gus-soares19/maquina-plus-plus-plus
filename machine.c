@@ -1,40 +1,31 @@
-#include "memory.c"
-#include <string.h>
-#include <stdlib.h>
 #include <time.h>
-#include <fcntl.h>
-#include <sys/ioctl.h>
-#include <unistd.h>
 #include <stdio.h>
 
 #define REGISTERS 5
-#define IO_SIZE 4
-#define CALL_STACK_SIZE 4
 #define A_ASCII 65
 #define MAX_INT 256
 #define MIN_INT 0
 #define MIN_OUT_ADDR 20
 #define MIN_IN_ADDR 24
 
-typedef struct LabelNode
+typedef struct TokenNode
 {
-    char *label;
-    int memPos;
-    struct LabelNode *next;
-} LabelNode;
+    Token *token;
+    int position;
+    bool is_label;
+    struct TokenNode *next;
+} TokenNode;
 
 typedef struct
 {
-    Memory memory;
     Stack call_stack;
     Stack data_stack;
-    LabelNode *labelNode_head;
+    TokenNode *tokenNode_head;
     int registers[REGISTERS];
-    int inputs[IO_SIZE];
-    int outputs[IO_SIZE];
     bool flag_c;
     bool flag_z;
     int timer;
+    int tokens;
     double delay;
     char *error;
 } Machine;
@@ -46,16 +37,11 @@ void machine_init(Machine *machine)
         machine->registers[i] = 0;
     }
 
-    for (int i = 0; i < IO_SIZE; i++)
-    {
-        machine->inputs[i] = 0;
-        machine->outputs[i] = 0;
-    }
-
-    memory_init(&(machine->memory));
     stack_init(&(machine->call_stack));
     stack_init(&(machine->data_stack));
-    machine->labelNode_head = NULL;
+
+    machine->tokens = 0;
+    machine->tokenNode_head = NULL;
     machine->flag_c = false;
     machine->flag_z = false;
     machine->error = (char *)malloc(192 * sizeof(char));
@@ -73,15 +59,15 @@ void set_delay(Machine *machine, double delay)
     machine->delay = delay;
 }
 
-void labelNodes_free(LabelNode *head)
+void tokenNodes_free(TokenNode *head)
 {
-    LabelNode *current = head;
-    LabelNode *next = NULL;
+    TokenNode *current = head;
+    TokenNode *next = NULL;
 
     while (current != NULL)
     {
         next = current->next;
-        free(current->label);
+        token_free(current->token);
         free(current);
         current = next;
     }
@@ -91,8 +77,7 @@ void machine_free(Machine *machine)
 {
     stack_free(&(machine->call_stack));
     stack_free(&(machine->data_stack));
-    labelNodes_free(machine->labelNode_head);
-    memory_free(&(machine->memory));
+    tokenNodes_free(machine->tokenNode_head);
 
     free(machine->error);
 
@@ -109,53 +94,107 @@ void delay(Machine *machine)
     }
 }
 
-TokenNode *get_label(Token *token, Machine *machine)
+void add_token(Token *token, Machine *machine)
 {
-    LabelNode *labelNode = machine->labelNode_head;
-
-    while (labelNode != NULL)
+    if (token == NULL)
     {
-        if (strncmp(labelNode->label, token->lexeme, strlen(token->lexeme)) == 0)
-        {
-            return get_token_at(labelNode->memPos, &(machine->memory));
-        }
-
-        labelNode = labelNode->next;
+        return;
     }
 
-    return NULL;
-}
+    TokenNode *new_tokenNode = (TokenNode *)malloc(sizeof(TokenNode));
+    new_tokenNode->token = token;
+    new_tokenNode->position = machine->tokens++;
+    new_tokenNode->is_label = token->type == 29;
+    new_tokenNode->next = NULL;
 
-void add_label(Token *token, Machine *machine)
-{
-    LabelNode *new_labelNode = (LabelNode *)malloc(sizeof(LabelNode));
-    new_labelNode->label = (char *)malloc(16 * sizeof(char));
-    strcpy(new_labelNode->label, token->lexeme);
-    new_labelNode->memPos = machine->memory.position - 1;
-    new_labelNode->next = NULL;
-
-    if (machine->labelNode_head == NULL)
+    if (machine->tokenNode_head == NULL)
     {
-        machine->labelNode_head = new_labelNode;
+        machine->tokenNode_head = new_tokenNode;
     }
     else
     {
-        LabelNode *current = machine->labelNode_head;
+        TokenNode *current = machine->tokenNode_head;
         while (current->next != NULL)
         {
             current = current->next;
         }
 
-        current->next = new_labelNode;
+        current->next = new_tokenNode;
     }
 }
 
-void check_flag_c(Machine *machine, int value)
+TokenNode *get_next_valid_token(TokenNode *current, Machine *machine)
+{
+    if (current == NULL)
+    {
+        return NULL;
+    }
+
+    TokenNode *tokenNode = current->next;
+    int length = sizeof(MACHINE_SET_CASES_VALUES) / sizeof(MACHINE_SET_CASES_VALUES[0]);
+    bool valid = false;
+
+    while (tokenNode != NULL)
+    {
+        for (size_t i = 0; i < length; i++)
+        {
+            if (tokenNode->token->type == MACHINE_SET_CASES_VALUES[i])
+            {
+                valid = true;
+                break;
+            }
+        }
+
+        if (valid)
+        {
+            break;
+        }
+
+        tokenNode = tokenNode->next;
+    }
+
+    return tokenNode;
+}
+
+TokenNode *get_token_at(int position, Machine *machine)
+{
+    if (machine->tokenNode_head == NULL)
+    {
+        return NULL;
+    }
+
+    TokenNode *tokenNode = machine->tokenNode_head;
+    while (tokenNode->position < position && tokenNode != NULL)
+    {
+        tokenNode = tokenNode->next;
+    }
+
+    return tokenNode;
+}
+
+TokenNode *get_token_by_label(Token *token, Machine *machine)
+{
+    TokenNode *tokenNode = machine->tokenNode_head;
+
+    while (tokenNode != NULL)
+    {
+        if (tokenNode->is_label && strncmp(tokenNode->token->lexeme, token->lexeme, strlen(token->lexeme)) == 0)
+        {
+            return tokenNode;
+        }
+
+        tokenNode = tokenNode->next;
+    }
+
+    return NULL;
+}
+
+void check_flag_c(int value, Machine *machine)
 {
     machine->flag_c = (value < MIN_INT || value > MAX_INT);
 }
 
-void check_flag_z(Machine *machine, int value)
+void check_flag_z(int value, Machine *machine)
 {
     machine->flag_z = (value == MIN_INT);
 }
@@ -181,8 +220,8 @@ void and_number(int number, char *register_to, Machine *machine)
     int value = number & machine->registers[register_to_position];
     machine->registers[register_to_position] = check_value(value);
 
-    check_flag_c(machine, machine->registers[register_to_position]);
-    check_flag_z(machine, machine->registers[register_to_position]);
+    check_flag_c(machine->registers[register_to_position], machine);
+    check_flag_z(machine->registers[register_to_position], machine);
 }
 
 void and_register(char *register_from, char *register_to, Machine *machine)
@@ -192,8 +231,8 @@ void and_register(char *register_from, char *register_to, Machine *machine)
     int value = machine->registers[register_to_position] & machine->registers[register_from_position];
     machine->registers[register_to_position] = check_value(value);
 
-    check_flag_c(machine, machine->registers[register_to_position]);
-    check_flag_z(machine, machine->registers[register_to_position]);
+    check_flag_c(machine->registers[register_to_position], machine);
+    check_flag_z(machine->registers[register_to_position], machine);
 }
 
 void or_number(int number, char *register_to, Machine *machine)
@@ -202,8 +241,8 @@ void or_number(int number, char *register_to, Machine *machine)
     int value = number | machine->registers[register_to_position];
     machine->registers[register_to_position] = check_value(value);
 
-    check_flag_c(machine, machine->registers[register_to_position]);
-    check_flag_z(machine, machine->registers[register_to_position]);
+    check_flag_c(machine->registers[register_to_position], machine);
+    check_flag_z(machine->registers[register_to_position], machine);
 }
 
 void or_register(char *register_from, char *register_to, Machine *machine)
@@ -213,8 +252,8 @@ void or_register(char *register_from, char *register_to, Machine *machine)
     int value = machine->registers[register_to_position] | machine->registers[register_from_position];
     machine->registers[register_to_position] = check_value(value);
 
-    check_flag_c(machine, machine->registers[register_to_position]);
-    check_flag_z(machine, machine->registers[register_to_position]);
+    check_flag_c(machine->registers[register_to_position], machine);
+    check_flag_z(machine->registers[register_to_position], machine);
 }
 
 void xor_number(int number, char *register_to, Machine *machine)
@@ -223,8 +262,8 @@ void xor_number(int number, char *register_to, Machine *machine)
     int value = number ^ machine->registers[register_to_position];
     machine->registers[register_to_position] = check_value(value);
 
-    check_flag_c(machine, machine->registers[register_to_position]);
-    check_flag_z(machine, machine->registers[register_to_position]);
+    check_flag_c(machine->registers[register_to_position], machine);
+    check_flag_z(machine->registers[register_to_position], machine);
 }
 
 void xor_register(char *register_from, char *register_to, Machine *machine)
@@ -234,8 +273,8 @@ void xor_register(char *register_from, char *register_to, Machine *machine)
     int value = machine->registers[register_to_position] ^ machine->registers[register_from_position];
     machine->registers[register_to_position] = check_value(value);
 
-    check_flag_c(machine, machine->registers[register_to_position]);
-    check_flag_z(machine, machine->registers[register_to_position]);
+    check_flag_c(machine->registers[register_to_position], machine);
+    check_flag_z(machine->registers[register_to_position], machine);
 }
 
 void not_number(int number, char *register_to, Machine *machine)
@@ -244,18 +283,19 @@ void not_number(int number, char *register_to, Machine *machine)
     int value = ~number;
     machine->registers[register_to_position] = check_value(value);
 
-    check_flag_c(machine, machine->registers[register_to_position]);
-    check_flag_z(machine, machine->registers[register_to_position]);
+    check_flag_c(machine->registers[register_to_position], machine);
+    check_flag_z(machine->registers[register_to_position], machine);
 }
 
-void not_register(char *register_to, Machine *machine)
+void not_register(char *register_from, char *register_to, Machine *machine)
 {
+    int register_from_position = register_from[0] - A_ASCII;
     int register_to_position = register_to[0] - A_ASCII;
-    int value = ~machine->registers[register_to_position];
+    int value = ~machine->registers[register_from_position];
     machine->registers[register_to_position] = check_value(value);
 
-    check_flag_c(machine, machine->registers[register_to_position]);
-    check_flag_z(machine, machine->registers[register_to_position]);
+    check_flag_c(machine->registers[register_to_position], machine);
+    check_flag_z(machine->registers[register_to_position], machine);
 }
 
 void add_number(int number, char *register_to, Machine *machine)
@@ -264,8 +304,8 @@ void add_number(int number, char *register_to, Machine *machine)
     int value = machine->registers[0] + number;
     machine->registers[register_to_position] = check_value(value);
 
-    check_flag_c(machine, value);
-    check_flag_z(machine, value);
+    check_flag_c(value, machine);
+    check_flag_z(value, machine);
 }
 
 void add_register(char *register_from, char *register_to, Machine *machine)
@@ -275,8 +315,8 @@ void add_register(char *register_from, char *register_to, Machine *machine)
     int value = machine->registers[0] + machine->registers[register_from_position];
     machine->registers[register_to_position] = check_value(value);
 
-    check_flag_c(machine, value);
-    check_flag_z(machine, value);
+    check_flag_c(value, machine);
+    check_flag_z(value, machine);
 }
 
 void sub_number(int number, char *register_to, Machine *machine)
@@ -285,8 +325,8 @@ void sub_number(int number, char *register_to, Machine *machine)
     int value = machine->registers[0] - number;
     machine->registers[register_to_position] = check_value(value);
 
-    check_flag_c(machine, value);
-    check_flag_z(machine, value);
+    check_flag_c(value, machine);
+    check_flag_z(value, machine);
 }
 
 void sub_register(char *register_from, char *register_to, Machine *machine)
@@ -296,8 +336,8 @@ void sub_register(char *register_from, char *register_to, Machine *machine)
     int value = machine->registers[0] - machine->registers[register_from_position];
     machine->registers[register_to_position] = check_value(value);
 
-    check_flag_c(machine, value);
-    check_flag_z(machine, value);
+    check_flag_c(value, machine);
+    check_flag_z(value, machine);
 }
 
 void inc(char *register_from, char *register_to, Machine *machine)
@@ -307,8 +347,8 @@ void inc(char *register_from, char *register_to, Machine *machine)
     int value = machine->registers[register_from_position] + 1;
     machine->registers[register_to_position] = check_value(value);
 
-    check_flag_c(machine, value);
-    check_flag_z(machine, value);
+    check_flag_c(value, machine);
+    check_flag_z(value, machine);
 }
 
 void mov_number(int number, char *register_to, Machine *machine)
@@ -316,8 +356,8 @@ void mov_number(int number, char *register_to, Machine *machine)
     int register_to_position = register_to[0] - A_ASCII;
     machine->registers[register_to_position] = check_value(number);
 
-    check_flag_c(machine, number);
-    check_flag_z(machine, number);
+    check_flag_c(number, machine);
+    check_flag_z(number, machine);
 }
 
 void mov_register(char *register_from, char *register_to, Machine *machine)
@@ -326,8 +366,8 @@ void mov_register(char *register_from, char *register_to, Machine *machine)
     int register_to_position = register_to[0] - A_ASCII;
     machine->registers[register_to_position] = check_value(machine->registers[register_from_position]);
 
-    check_flag_c(machine, machine->registers[register_from_position]);
-    check_flag_z(machine, machine->registers[register_from_position]);
+    check_flag_c(machine->registers[register_from_position], machine);
+    check_flag_z(machine->registers[register_from_position], machine);
 }
 
 void mov_output(char *register_from, char *output, Machine *machine)
@@ -339,13 +379,9 @@ void mov_output(char *register_from, char *output, Machine *machine)
     sscanf(output, "OUT%d", &output_addr);
     int register_from_position = register_from[0] - A_ASCII;
 
-    sprintf(buffer, "%s %d -a 0x%d 0x%X", command, CONFIG_EXAMPLES_M3P_I2C_BUS, (MIN_OUT_ADDR + output_addr), machine->outputs[output_addr]);
+    sprintf(buffer, "%s %d -a 0x%d 0x%X", command, CONFIG_EXAMPLES_M3P_I2C_BUS, (MIN_OUT_ADDR + output_addr), machine->registers[register_from_position]);
 
-    if (system(buffer) == 0)
-    {
-        machine->outputs[output_addr] = machine->registers[register_from_position];
-    }
-    else
+    if (system(buffer) != 0)
     {
         printf("Não foi possível ler a porta OUT%d.\n", output_addr);
     }
@@ -374,7 +410,7 @@ void mov_input(char *input, char *register_to, Machine *machine)
         {
             if (sscanf(response, "READ %*s %*s %*s %*s %*s %*s Value: %d", &value) == 1)
             {
-                machine->registers[register_to_position] = machine->inputs[input_addr] = (int)value;
+                machine->registers[register_to_position] = (int)value;
             }
             else
             {
@@ -388,225 +424,437 @@ void mov_input(char *input, char *register_to, Machine *machine)
 HttpResponse *execute(Machine *machine)
 {
     time_t start_time = time(NULL);
-    TokenNode *current = machine->memory.head;
     char *register_from, *register_to, *input, *output;
     int number, position;
-
+    TokenNode *current = machine->tokenNode_head;
     while (current != NULL)
     {
         switch (current->token->type)
         {
-        case 14: // ADD
-            current = current->next;
-            if (current->token->type == 7) // NUMBER
+        case INSTRUCTION_ADD:
+            current = get_next_valid_token(current, machine);
+            if (current == NULL)
+            {
+                strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução ADD.");
+                break;
+            }
+
+            if (current->token->type == NUMBER)
             {
                 number = strtol(current->token->lexeme, NULL, 16);
 
-                current = current->next;
+                current = get_next_valid_token(current, machine);
+                if (current == NULL)
+                {
+                    strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução ADD.");
+                    break;
+                }
+
                 register_to = current->token->lexeme;
 
                 add_number(number, register_to, machine);
             }
-            else // REGISTER
+            else if (current->token->type >= REGISTER_A && current->token->type <= REGISTER_E)
             {
                 register_from = current->token->lexeme;
 
-                current = current->next;
+                current = get_next_valid_token(current, machine);
+                if (current == NULL)
+                {
+                    strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução ADD.");
+                    break;
+                }
+
                 register_to = current->token->lexeme;
 
                 add_register(register_from, register_to, machine);
             }
+            else
+            {
+                strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução ADD.");
+            }
             break;
 
-        case 15: // SUB
-            current = current->next;
-            if (current->token->type == 7) // NUMBER
+        case INSTRUCTION_SUB:
+            current = get_next_valid_token(current, machine);
+            if (current == NULL)
+            {
+                strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução SUB.");
+                break;
+            }
+
+            if (current->token->type == NUMBER)
             {
                 number = strtol(current->token->lexeme, NULL, 16);
 
-                current = current->next;
+                current = get_next_valid_token(current, machine);
+                if (current == NULL)
+                {
+                    strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução SUB.");
+                    break;
+                }
+
                 register_to = current->token->lexeme;
 
                 sub_number(number, register_to, machine);
             }
-            else // REGISTER
+            else if (current->token->type >= REGISTER_A && current->token->type <= REGISTER_E)
             {
                 register_from = current->token->lexeme;
 
-                current = current->next;
+                current = get_next_valid_token(current, machine);
+                if (current == NULL)
+                {
+                    strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução SUB.");
+                    break;
+                }
+
                 register_to = current->token->lexeme;
 
                 sub_register(register_from, register_to, machine);
             }
+            else
+            {
+                strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução SUB.");
+            }
             break;
 
-        case 16: // AND
-            current = current->next;
-            if (current->token->type == 7) // NUMBER
+        case INSTRUCTION_AND:
+            current = get_next_valid_token(current, machine);
+            if (current == NULL)
+            {
+                strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução AND.");
+                break;
+            }
+
+            if (current->token->type == NUMBER)
             {
                 number = strtol(current->token->lexeme, NULL, 16);
 
-                current = current->next;
+                current = get_next_valid_token(current, machine);
+                if (current == NULL)
+                {
+                    strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução AND.");
+                    break;
+                }
+
                 register_to = current->token->lexeme;
 
                 and_number(number, register_to, machine);
             }
-            else // REGISTER
+            else if (current->token->type >= REGISTER_A && current->token->type <= REGISTER_E)
             {
                 register_from = current->token->lexeme;
 
-                current = current->next;
+                current = get_next_valid_token(current, machine);
+                if (current == NULL)
+                {
+                    strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução AND.");
+                    break;
+                }
+
                 register_to = current->token->lexeme;
 
                 and_register(register_from, register_to, machine);
             }
+            else
+            {
+                strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução AND.");
+            }
             break;
 
-        case 17: // OR
-            current = current->next;
-            if (current->token->type == 7) // NUMBER
+        case INSTRUCTION_OR:
+            current = get_next_valid_token(current, machine);
+            if (current == NULL)
+            {
+                strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução OR.");
+                break;
+            }
+
+            if (current->token->type == NUMBER)
             {
                 number = strtol(current->token->lexeme, NULL, 16);
 
-                current = current->next;
+                current = get_next_valid_token(current, machine);
+                if (current == NULL)
+                {
+                    strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução OR.");
+                    break;
+                }
+
                 register_to = current->token->lexeme;
 
                 or_number(number, register_to, machine);
             }
-            else // REGISTER
+            else if (current->token->type >= REGISTER_A && current->token->type <= REGISTER_E)
             {
                 register_from = current->token->lexeme;
 
-                current = current->next;
+                current = get_next_valid_token(current, machine);
+                if (current == NULL)
+                {
+                    strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução OR.");
+                    break;
+                }
+
                 register_to = current->token->lexeme;
 
                 or_register(register_from, register_to, machine);
             }
+            else
+            {
+                strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução OR.");
+            }
             break;
 
-        case 18: // XOR
-            current = current->next;
-            if (current->token->type == 7) // NUMBER
+        case INSTRUCTION_XOR:
+            current = get_next_valid_token(current, machine);
+            if (current == NULL)
+            {
+                strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução XOR.");
+                break;
+            }
+
+            if (current->token->type == NUMBER)
             {
                 number = strtol(current->token->lexeme, NULL, 16);
 
-                current = current->next;
+                current = get_next_valid_token(current, machine);
+                if (current == NULL)
+                {
+                    strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução XOR.");
+                    break;
+                }
+
                 register_to = current->token->lexeme;
 
                 xor_number(number, register_to, machine);
             }
-            else // REGISTER
+            else if (current->token->type >= REGISTER_A && current->token->type <= REGISTER_E)
             {
                 register_from = current->token->lexeme;
 
-                current = current->next;
+                current = get_next_valid_token(current, machine);
+                if (current == NULL)
+                {
+                    strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução XOR.");
+                    break;
+                }
+
                 register_to = current->token->lexeme;
 
                 xor_register(register_from, register_to, machine);
             }
+            else
+            {
+                strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução XOR.");
+            }
             break;
 
-        case 19: // NOT
-            current = current->next;
-            if (current->token->type == 7) // NUMBER
+        case INSTRUCTION_NOT:
+            current = get_next_valid_token(current, machine);
+            if (current == NULL)
+            {
+                strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução NOT.");
+                break;
+            }
+
+            if (current->token->type == NUMBER)
             {
                 number = strtol(current->token->lexeme, NULL, 16);
 
-                current = current->next;
+                current = get_next_valid_token(current, machine);
+                if (current == NULL)
+                {
+                    strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução NOT.");
+                    break;
+                }
+
                 register_to = current->token->lexeme;
 
                 not_number(number, register_to, machine);
             }
-            else // REGISTER
+            else if (current->token->type >= REGISTER_A && current->token->type <= REGISTER_E)
             {
+                register_from = current->token->lexeme;
+
+                current = get_next_valid_token(current, machine);
+                if (current == NULL)
+                {
+                    strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução NOT.");
+                    break;
+                }
+
                 register_to = current->token->lexeme;
 
-                not_register(register_to, machine);
+                not_register(register_from, register_to, machine);
+            }
+            else
+            {
+                strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução NOT.");
             }
             break;
 
-        case 20: // MOV
-            current = current->next;
-            if (current->token->type == 7) // NUMBER
+        case INSTRUCTION_MOV:
+            current = get_next_valid_token(current, machine);
+            if (current == NULL)
+            {
+                strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução MOV.");
+                break;
+            }
+
+            if (current->token->type == NUMBER)
             {
                 number = strtol(current->token->lexeme, NULL, 16);
 
-                current = current->next;
+                current = get_next_valid_token(current, machine);
+                if (current == NULL)
+                {
+                    strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução MOV.");
+                    break;
+                }
+
                 register_to = current->token->lexeme;
 
                 mov_number(number, register_to, machine);
             }
-            else if (current->token->type == 11) // INPUT
+            else if (current->token->type == INPUT_PORT)
             {
                 input = current->token->lexeme;
 
-                current = current->next;
+                current = get_next_valid_token(current, machine);
+                if (current == NULL)
+                {
+                    strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução MOV.");
+                    break;
+                }
+
                 register_to = current->token->lexeme;
 
                 mov_input(input, register_to, machine);
             }
-            else // REGISTER
+            else if (current->token->type >= REGISTER_A && current->token->type <= REGISTER_E)
             {
                 register_from = current->token->lexeme;
-                current = current->next;
+                current = get_next_valid_token(current, machine);
+                if (current == NULL)
+                {
+                    strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução MOV.");
+                    break;
+                }
 
-                if (current->token->type == 12) // OUTPUT
+                if (current->token->type == OUTPUT_PORT)
                 {
                     output = current->token->lexeme;
 
                     mov_output(register_from, output, machine);
                 }
-                else // REGISTER
+                else if (current->token->type >= REGISTER_A && current->token->type <= REGISTER_E)
                 {
                     register_to = current->token->lexeme;
 
                     mov_register(register_from, register_to, machine);
                 }
+                else
+                {
+                    strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução MOV.");
+                }
+            }
+            else
+            {
+                strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução MOV.");
             }
             break;
 
-        case 21: // INC
-            current = current->next;
+        case INSTRUCTION_INC:
+            current = get_next_valid_token(current, machine);
+            if (current == NULL)
+            {
+                strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução INC.");
+                break;
+            }
 
-            register_from = current->token->lexeme;
+            if (current->token->type >= REGISTER_A && current->token->type <= REGISTER_E)
+            {
+                register_from = current->token->lexeme;
 
-            current = current->next;
-            register_to = current->token->lexeme;
+                current = get_next_valid_token(current, machine);
+                if (current == NULL)
+                {
+                    strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução INC.");
+                    break;
+                }
 
-            inc(register_from, register_to, machine);
+                if (current->token->type >= REGISTER_A && current->token->type <= REGISTER_E)
+                {
+                    register_to = current->token->lexeme;
+
+                    inc(register_from, register_to, machine);
+                }
+                else
+                {
+                    strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução INC.");
+                }
+            }
+            else
+            {
+                strcpy(machine->error, "InvalidArgumentException: Parâmetros inválidos para a instrução INC.");
+            }
             break;
 
-        case 22: // JMP
-            current = current->next;
-            current = get_label(current->token, machine);
+        case INSTRUCTION_JMP:
+            current = get_next_valid_token(current, machine);
+            if (current == NULL)
+            {
+                strcpy(machine->error, "InvalidArgumentException: parâmetro inválido para a instrução JMP.");
+                break;
+            }
+
+            current = get_token_by_label(current->token, machine);
             break;
 
-        case 23: // JMPC
-            current = current->next;
+        case INSTRUCTION_JMPC:
+            current = get_next_valid_token(current, machine);
+            if (current == NULL)
+            {
+                strcpy(machine->error, "InvalidArgumentException: parâmetro inválido para a instrução JMPC.");
+                break;
+            }
 
             if (machine->flag_c == true)
             {
-                current = get_label(current->token, machine);
+                current = get_token_by_label(current->token, machine);
             }
             break;
 
-        case 24: // JMPZ
-            current = current->next;
+        case INSTRUCTION_JMPZ:
+            current = get_next_valid_token(current, machine);
+            if (current == NULL)
+            {
+                strcpy(machine->error, "InvalidArgumentException: parâmetro inválido para a instrução JMPZ.");
+                break;
+            }
 
             if (machine->flag_z == true)
             {
-                current = get_label(current->token, machine);
+                current = get_token_by_label(current->token, machine);
             }
             break;
 
-        case 25: // CALL
+        case INSTRUCTION_CALL:
             if (!is_full(&(machine->call_stack)))
             {
-                current = current->next;
+                current = get_next_valid_token(current, machine);
+                if (current == NULL)
+                {
+                    strcpy(machine->error, "InvalidArgumentException: parâmetro inválido para a instrução CALL.");
+                    break;
+                }
+
                 position = current->position;
 
                 push(&(machine->call_stack), position);
-                current = get_label(current->token, machine);
+                current = get_token_by_label(current->token, machine);
             }
             else
             {
@@ -614,10 +862,10 @@ HttpResponse *execute(Machine *machine)
             }
             break;
 
-        case 26: // RET
+        case INSTRUCTION_RET:
             if (!is_empty(&(machine->call_stack)))
             {
-                current = get_token_at(pop(&(machine->call_stack)), &(machine->memory));
+                current = get_token_at(pop(&(machine->call_stack)), machine);
             }
             else
             {
@@ -625,10 +873,16 @@ HttpResponse *execute(Machine *machine)
             }
             break;
 
-        case 27: // PUSH
+        case INSTRUCTION_PUSH:
             if (!is_full(&(machine->data_stack)))
             {
-                current = current->next;
+                current = get_next_valid_token(current, machine);
+                if (current == NULL)
+                {
+                    strcpy(machine->error, "InvalidArgumentException: parâmetro inválido para a instrução PUSH.");
+                    break;
+                }
+
                 number = strtol(current->token->lexeme, NULL, 16);
 
                 push(&(machine->data_stack), number);
@@ -639,12 +893,18 @@ HttpResponse *execute(Machine *machine)
             }
             break;
 
-        case 28: // POP
+        case INSTRUCTION_POP:
             if (!is_empty(&(machine->data_stack)))
             {
                 number = pop(&(machine->data_stack));
 
-                current = current->next;
+                current = get_next_valid_token(current, machine);
+                if (current == NULL)
+                {
+                    strcpy(machine->error, "InvalidArgumentException: parâmetro inválido para a instrução POP.");
+                    break;
+                }
+
                 register_to = current->token->lexeme;
 
                 mov_number(number, register_to, machine);
@@ -656,7 +916,19 @@ HttpResponse *execute(Machine *machine)
             }
             break;
 
-        default:
+        default: // entrará aqui em caso de virgula, dois pontos, label ou qualquer outro token não mapeado
+
+            if (current == NULL)
+            {
+                strcpy(machine->error, "NullPointerException: Nenhum token encontrado para interpretar.");
+                break;
+            }
+
+            if (current->token->type != LABEL_ID && current->token->type != LABEL &&
+                current->token->type != SEMICOLON && current->token->type != COMA)
+            {
+                strcpy(machine->error, "InvalidArgumentException: Token não mapeado.");
+            }
             break;
         }
 
@@ -681,7 +953,7 @@ HttpResponse *execute(Machine *machine)
             break;
         }
 
-        current = current->next;
+        current = current->next; // retorna o próximo token independente do tipo
 
         delay(machine);
     }

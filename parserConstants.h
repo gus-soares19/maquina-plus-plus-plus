@@ -1,3 +1,6 @@
+#ifndef PARSER_CONSTANTS_H
+#define PARSER_CONSTANTS_H
+
 int START_SYMBOL = 32;
 
 int FIRST_NON_TERMINAL = 32;
@@ -92,12 +95,14 @@ char *PARSER_ERROR[41] =
         "Era esperado LABEL",
         "Era esperado \";\"",
         "Era esperado \",\"",
-        "<programa> inválido",
-        "<label> inválido",
-        "<instrucoes> inválido",
-        "<instrucao> inválido",
-        "<rend> inválido",
-        "<reg> inválido",
-        "<tipo> inválido",
-        "<tipo2> inválido",
-        "<tipo3> inválido"};
+        "início de código inválido",
+        "label inválida",
+        "instrução inválida",
+        "instrução inválido",
+        "rend inválido",
+        "registrador inválido",
+        "porta INPUT inválida",
+        "porta OUTPUT inválida",
+        "parâmetro inválido"};
+
+#endif

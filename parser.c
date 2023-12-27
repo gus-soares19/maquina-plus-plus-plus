@@ -1,10 +1,10 @@
+#include "constants.h"
+#include "parserConstants.h"
 #include "token.c"
 #include "stack.c"
-#include "constants.c"
 #include "tokenizer.c"
 #include "contextualizer.c"
 #include "machine.c"
-#include <stdbool.h>
 
 typedef struct
 {
@@ -52,20 +52,6 @@ bool push_production(Parser *parser, int topStack, int tokenInput)
     }
 }
 
-bool is_valid(Token *token)
-{
-    int length = sizeof(MEMORY_CASES_VALUES) / sizeof(MEMORY_CASES_VALUES[0]);
-    for (size_t i = 0; i < length; i++)
-    {
-        if (token->type == MEMORY_CASES_VALUES[i])
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 bool step(Parser *parser)
 {
     if (parser->current_token == NULL)
@@ -99,15 +85,7 @@ bool step(Parser *parser)
                 parser->previous_token = parser->current_token;
                 parser->current_token = get_next_token(&(parser->tokenizer));
 
-                if (parser->current_token != NULL && is_valid(parser->current_token))
-                {
-                    add_token(parser->current_token, &(parser->machine.memory));
-
-                    if (parser->current_token->type == 29)
-                    {
-                        add_label(parser->current_token, &(parser->machine));
-                    }
-                }
+                add_token(parser->current_token, &(parser->machine));
 
                 return false;
             }
@@ -176,15 +154,7 @@ HttpResponse *parse(Parser *parser, char *code, int timer, double delay, int mod
 
     parser->current_token = get_next_token(&(parser->tokenizer));
 
-    if (parser->current_token != NULL && is_valid(parser->current_token))
-    {
-        add_token(parser->current_token, &(parser->machine.memory));
-
-        if (parser->current_token->type == 29)
-        {
-            add_label(parser->current_token, &(parser->machine));
-        }
-    }
+    add_token(parser->current_token, &(parser->machine));
 
     while (!step(parser))
     {

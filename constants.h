@@ -1,0 +1,37 @@
+#ifndef CONSTANTS_H
+#define CONSTANTS_H
+
+#define EPSILON 0 
+#define DOLLAR 1 
+#define REGISTER_A 2 
+#define REGISTER_B 3 
+#define REGISTER_C 4 
+#define REGISTER_D 5 
+#define REGISTER_E 6 
+#define NUMBER 7 
+#define RAM 8 
+#define RREND 9 
+#define DRAM 10 
+#define INPUT_PORT 11 
+#define OUTPUT_PORT 12 
+#define LABEL_ID 13 
+#define INSTRUCTION_ADD 14 
+#define INSTRUCTION_SUB 15 
+#define INSTRUCTION_AND 16 
+#define INSTRUCTION_OR 17 
+#define INSTRUCTION_XOR 18 
+#define INSTRUCTION_NOT 19 
+#define INSTRUCTION_MOV 20 
+#define INSTRUCTION_INC 21 
+#define INSTRUCTION_JMP 22 
+#define INSTRUCTION_JMPC 23 
+#define INSTRUCTION_JMPZ 24 
+#define INSTRUCTION_CALL 25 
+#define INSTRUCTION_RET 26 
+#define INSTRUCTION_PUSH 27 
+#define INSTRUCTION_POP 28 
+#define LABEL 29 
+#define SEMICOLON 30 
+#define COMA 31 
+
+#endif

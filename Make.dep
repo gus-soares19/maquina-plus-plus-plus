@@ -1,6 +1,7 @@
 server.c.home.gustavo.nuttxspace.apps.examples.m3p.o: server.c \
- /home/gustavo/nuttxspace/nuttx/include/stdio.h \
  /home/gustavo/nuttxspace/nuttx/include/nuttx/config.h \
+ /home/gustavo/nuttxspace/apps/include/netutils/cJSON.h \
+ /home/gustavo/nuttxspace/nuttx/include/stddef.h \
  /home/gustavo/nuttxspace/nuttx/include/sys/types.h \
  /home/gustavo/nuttxspace/nuttx/include/nuttx/compiler.h \
  /home/gustavo/nuttxspace/nuttx/include/stdint.h \
@@ -8,6 +9,7 @@ server.c.home.gustavo.nuttxspace.apps.examples.m3p.o: server.c \
  /home/gustavo/nuttxspace/nuttx/include/arch/inttypes.h \
  /home/gustavo/nuttxspace/nuttx/include/limits.h \
  /home/gustavo/nuttxspace/nuttx/include/arch/limits.h \
+ /home/gustavo/nuttxspace/nuttx/include/stdio.h \
  /opt/xtensa/xtensa-esp32-elf/lib/gcc/xtensa-esp32-elf/8.2.0/include/stdarg.h \
  /home/gustavo/nuttxspace/nuttx/include/time.h \
  /home/gustavo/nuttxspace/nuttx/include/nuttx/fs/fs.h \
@@ -30,7 +32,6 @@ server.c.home.gustavo.nuttxspace.apps.examples.m3p.o: server.c \
  /home/gustavo/nuttxspace/nuttx/include/nuttx/wqueue.h \
  /home/gustavo/nuttxspace/nuttx/include/nuttx/wdog.h \
  /home/gustavo/nuttxspace/nuttx/include/arch/arch.h \
- /home/gustavo/nuttxspace/nuttx/include/stddef.h \
  /home/gustavo/nuttxspace/nuttx/include/nuttx/userspace.h \
  /home/gustavo/nuttxspace/nuttx/include/signal.h \
  /home/gustavo/nuttxspace/nuttx/include/pthread.h \
@@ -58,23 +59,16 @@ server.c.home.gustavo.nuttxspace.apps.examples.m3p.o: server.c \
  /home/gustavo/nuttxspace/nuttx/include/sys/uio.h \
  /home/gustavo/nuttxspace/nuttx/include/nuttx/mm/iob.h \
  /home/gustavo/nuttxspace/nuttx/include/malloc.h \
+ /home/gustavo/nuttxspace/nuttx/include/ctype.h \
+ /home/gustavo/nuttxspace/nuttx/include/langinfo.h \
+ /home/gustavo/nuttxspace/nuttx/include/nl_types.h \
+ /home/gustavo/nuttxspace/nuttx/include/locale.h \
  /home/gustavo/nuttxspace/nuttx/include/arpa/inet.h \
  /home/gustavo/nuttxspace/nuttx/include/netinet/in.h \
  /home/gustavo/nuttxspace/nuttx/include/endian.h \
  /home/gustavo/nuttxspace/nuttx/include/sys/endian.h httpResponse.c \
- parser.c token.c stack.c constants.c tokenizerConstants.c \
- parserConstants.c contextualizerConstants.c tokenizer.c contextualizer.c \
- /home/gustavo/nuttxspace/nuttx/include/ctype.h \
- /home/gustavo/nuttxspace/nuttx/include/langinfo.h \
- /home/gustavo/nuttxspace/nuttx/include/nl_types.h \
- /home/gustavo/nuttxspace/nuttx/include/locale.h hashMap.c hashMapList.c \
- machine.c memory.c /home/gustavo/nuttxspace/nuttx/include/fcntl.h \
- /home/gustavo/nuttxspace/nuttx/include/sys/ioctl.h \
- /home/gustavo/nuttxspace/nuttx/include/nuttx/fs/ioctl.h \
- /home/gustavo/nuttxspace/nuttx/include/nuttx/serial/tioctl.h \
- /home/gustavo/nuttxspace/nuttx/include/nuttx/net/ioctl.h \
- /home/gustavo/nuttxspace/nuttx/include/nuttx/wireless/wireless.h \
- /home/gustavo/nuttxspace/nuttx/include/net/if.h \
- /home/gustavo/nuttxspace/nuttx/include/nuttx/wireless/ioctl.h
+ parser.c constants.h parserConstants.h token.c stack.c tokenizer.c \
+ tokenizerConstants.h contextualizer.c contextualizerConstants.h \
+ hashMap.c hashMapList.c machine.c machineMemory.c
 # No files specified for dependency generation
 # No files specified for dependency generation

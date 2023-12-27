@@ -1,7 +1,5 @@
-#include <strings.h>
-#include <ctype.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include <string.h>
+#include "contextualizerConstants.h"
 #include "hashMap.c"
 #include "hashMapList.c"
 

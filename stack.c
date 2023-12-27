@@ -1,5 +1,4 @@
 #include <stdbool.h>
-#include <stdio.h>
 
 #define STACK_SIZE 256
 
