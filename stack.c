@@ -28,10 +28,16 @@ bool is_full(Stack *stack)
     return stack->top >= STACK_SIZE;
 }
 
-void push(Stack *stack, int value)
+int stack_push(Stack *stack, int value)
 {
+    if (is_full(stack))
+    {
+        return -1;
+    }
+
     stack->top++;
     stack->data[stack->top] = value;
+    return value;
 }
 
 void push_at(Stack *stack, int index, int value)
@@ -44,7 +50,7 @@ void push_at(Stack *stack, int index, int value)
     stack->data[index] = value;
 }
 
-int pop(Stack *stack)
+int stack_pop(Stack *stack)
 {
     return is_empty(stack) ? -1 : stack->data[stack->top--];
 }

@@ -98,11 +98,11 @@ char *PARSER_ERROR[41] =
         "início de código inválido",
         "label inválida",
         "instrução inválida",
-        "instrução inválido",
+        "instrução inválida",
         "rend inválido",
         "registrador inválido",
-        "porta INPUT inválida",
-        "porta OUTPUT inválida",
+        "endereço de origem inválido",
+        "endereço de destino inválido",
         "parâmetro inválido"};
 
 #endif

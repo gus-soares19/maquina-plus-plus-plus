@@ -97,7 +97,7 @@ char *get_html_file(const char *file_name)
     rewind(file);
 
     // Aloca memória para armazenar o conteúdo do arquivo
-    char *content = (char *)malloc(sizeof(char) * (length + 1));
+    char *content = (char *)malloc((length + 1) * sizeof(char));
     if (content == NULL)
     {
         fprintf(stderr, "Erro ao alocar memória para o conteúdo do arquivo.\n");
@@ -136,7 +136,7 @@ char *replace_text(char *input, const char *target, const char *replacement)
     int replacement_length = strlen(replacement);
     int new_size = original_length - pattern_length + replacement_length;
 
-    char *result = (char *)malloc(new_size + 1);
+    char *result = (char *)malloc((new_size + 1) * sizeof(char));
 
     if (result == NULL)
     {
@@ -157,7 +157,7 @@ char *replace_text(char *input, const char *target, const char *replacement)
 void *request_handler(void *arg)
 {
     int socket = *((int *)arg);
-    char buffer[1024];
+    char buffer[2048];
     int bytes;
     const char *file = "/data/client.html";
     char *html_response = "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\n\r\n";
@@ -188,7 +188,7 @@ void *request_handler(void *arg)
             pthread_exit(NULL);
         }
 
-        char *response = (char *)malloc(strlen(html_file) + strlen(html_response) + 1);
+        char *response = (char *)malloc((strlen(html_file) + strlen(html_response) + 1) * sizeof(char));
         strcpy(response, html_response);
         strcat(response, html_file);
 

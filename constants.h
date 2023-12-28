@@ -8,7 +8,7 @@
 #define REGISTER_C 4 
 #define REGISTER_D 5 
 #define REGISTER_E 6 
-#define NUMBER 7 
+#define HEXADECIMAL 7 
 #define RAM 8 
 #define RREND 9 
 #define DRAM 10 

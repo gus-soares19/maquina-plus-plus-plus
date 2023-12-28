@@ -10,8 +10,8 @@ typedef struct
 HttpResponse *httpResponse_create(char *message, int code, char *type)
 {
     HttpResponse *response = (HttpResponse *)malloc(sizeof(HttpResponse));
-    response->type = (char *)malloc(16 * sizeof(char));
-    response->message = (char *)malloc(192 * sizeof(char));
+    response->type = (char *)malloc((strlen(type) + 1) * sizeof(char));
+    response->message = (char *)malloc((strlen(message) + 1) * sizeof(char));
 
     response->code = code;
     strcpy(response->type, type);
@@ -31,7 +31,8 @@ void httpResponse_free(HttpResponse *httpResponse)
 
 char *httpResponse_to_string(HttpResponse *httpResponse)
 {
-    char *response = (char *)malloc(384 * sizeof(char));
+    int length = strlen(httpResponse->type) + strlen(httpResponse->message) + 3 + 184;
+    char *response = (char *)malloc(length * sizeof(char));
 
     sprintf(response,
             "HTTP/1.1 %d %s\r\n"

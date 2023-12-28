@@ -12,30 +12,29 @@ typedef struct
 void tokenizer_init(Tokenizer *tokenizer)
 {
     tokenizer->position = 0;
-    tokenizer->input = (char *)malloc(1024 * sizeof(char));
-    tokenizer->error = (char *)malloc(192 * sizeof(char));
-
-    strcpy(tokenizer->input, "");
-    strcpy(tokenizer->error, "");
+    tokenizer->input = NULL;
+    tokenizer->error = NULL;
 }
 
 void tokenizer_free(Tokenizer *tokenizer)
 {
-    free(tokenizer->input);
-    free(tokenizer->error);
+    if (tokenizer->input != NULL)
+    {
+        free(tokenizer->input);
+    }
+
+    if (tokenizer->error != NULL)
+    {
+        free(tokenizer->error);
+    }
 
     tokenizer = NULL;
 }
 
-void set_position(Tokenizer *tokenizer, int pos)
-{
-    tokenizer->position = pos;
-}
-
 void set_input(Tokenizer *tokenizer, char *input)
 {
+    tokenizer->input = (char *)malloc((strlen(input) + 1) * sizeof(char));
     strcpy(tokenizer->input, input);
-    set_position(tokenizer, 0);
 }
 
 int get_next_state(unsigned char c, int state)
@@ -148,6 +147,9 @@ Token *get_next_token(Tokenizer *tokenizer)
 
     if (end_state < 0 || (end_state != state && get_token_by_state(last_state) == -2))
     {
+        int length = snprintf(NULL, 0, "Erro na posição %d: %s.", start, SCANNER_ERROR[last_state]) + 1;
+        tokenizer->error = (char *)malloc(length * sizeof(char));
+
         sprintf(tokenizer->error, "Erro na posição %d: %s.", start, SCANNER_ERROR[last_state]);
         return NULL;
     }

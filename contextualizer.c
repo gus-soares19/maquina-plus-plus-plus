@@ -19,9 +19,7 @@ void contextualizer_init(Contextualizer *contextualizer)
     contextualizer->stack_index = 0;
     contextualizer->generated_byte = 0;
     contextualizer->generated_byte_aux = 0;
-    contextualizer->error = (char *)malloc(192 * sizeof(char));
-
-    strcpy(contextualizer->error, "");
+    contextualizer->error = NULL;
 
     stack_init(&contextualizer->stack);
     hashMap_init(&contextualizer->labels);
@@ -33,7 +31,11 @@ void contextualizer_free(Contextualizer *contextualizer)
     hashMap_free(&(contextualizer->labels));
     hashMapList_free(&(contextualizer->labels_buffer));
     stack_free(&(contextualizer->stack));
-    free(contextualizer->error);
+
+    if (contextualizer->error != NULL)
+    {
+        free(contextualizer->error);
+    }
 
     contextualizer = NULL;
 }
@@ -93,7 +95,10 @@ void execute_action(Contextualizer *contextualizer, int action, Token *token)
                 }
                 else
                 {
-                    sprintf(contextualizer->error, "Erro na posição %d: label '%s' não existe.", token->position, bufferList->key);                    
+                    int length = snprintf(NULL, 0, "Erro na posição %d: label '%s' não existe.", token->position, bufferList->key) + 1;
+                    contextualizer->error = (char *)malloc(length * sizeof(char));
+
+                    sprintf(contextualizer->error, "Erro na posição %d: label '%s' não existe.", token->position, bufferList->key);
                 }
             }
         }
@@ -229,7 +234,7 @@ void execute_action(Contextualizer *contextualizer, int action, Token *token)
 
     case RAM_RECORD:
         strcpy(value, "");
-        sprintf(value, "%s%s", HEXA_PREFIX, substring(token->lexeme, 1, 3));
+        snprintf(value, strlen(value), "%s%s", HEXA_PREFIX, substring(token->lexeme, 1, 3));
         contextualizer->generated_byte = (int)strtol(value, NULL, 0);
         contextualizer->stack_index++;
         resize(&contextualizer->stack, contextualizer->stack_index + 1);
@@ -239,7 +244,7 @@ void execute_action(Contextualizer *contextualizer, int action, Token *token)
 
     case ROM_PREPARE:
         strcpy(value, "");
-        sprintf(value, "%s%s", HEXA_PREFIX, token->lexeme);
+        snprintf(value, strlen(value), "%s%s", HEXA_PREFIX, token->lexeme);
         contextualizer->generated_byte_aux = (int)strtol(value, NULL, 0);
         break;
 
@@ -259,14 +264,14 @@ void execute_action(Contextualizer *contextualizer, int action, Token *token)
 
     case REND:
         strcpy(value, "");
-        sprintf(value, "%s%s", HEXA_PREFIX, substring(token->lexeme, 1, 3));
+        snprintf(value, strlen(value), "%s%s", HEXA_PREFIX, substring(token->lexeme, 1, 3));
         contextualizer->generated_byte = (int)strtol(value, NULL, 0);
         contextualizer->stack_index++;
         resize(&contextualizer->stack, contextualizer->stack_index + 1);
         push_at(&contextualizer->stack, contextualizer->stack_index, contextualizer->generated_byte);
 
         strcpy(value, "");
-        sprintf(value, "%s%s", HEXA_PREFIX, substring(token->lexeme, 3, 5));
+        snprintf(value, strlen(value), "%s%s", HEXA_PREFIX, substring(token->lexeme, 3, 5));
         contextualizer->generated_byte = (int)strtol(value, NULL, 0);
         contextualizer->stack_index++;
         resize(&contextualizer->stack, contextualizer->stack_index + 1);
@@ -290,6 +295,9 @@ void execute_action(Contextualizer *contextualizer, int action, Token *token)
         }
         else
         {
+            int length = snprintf(NULL, 0, "Erro na posição %d: label '%s' duplicada.", token->position, label) + 1;
+            contextualizer->error = (char *)malloc(length * sizeof(char));
+
             sprintf(contextualizer->error, "Erro na posição %d: label '%s' duplicada.", token->position, label);
         }
         free(label);

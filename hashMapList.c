@@ -79,7 +79,7 @@ void hashMapList_put(HashMapList *hashMapList, char *key, int value)
         List *new_list = hashMapList->list[hashMapList->top++];
         new_list = (List *)malloc(sizeof(List));
 
-        new_list->key = (char *)malloc(16 * sizeof(char));
+        new_list->key = (char *)malloc((strlen(key) + 1) * sizeof(char));
         strcpy(new_list->key, key);
         new_list->listNodes_head = NULL;
 

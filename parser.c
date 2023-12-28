@@ -17,6 +17,35 @@ typedef struct
     char *error;
 } Parser;
 
+void parser_init(Parser *parser)
+{
+    tokenizer_init(&(parser->tokenizer));
+    contextualizer_init(&(parser->contextualizer));
+    stack_init(&(parser->stack));
+    machine_init(&(parser->machine));
+
+    parser->current_token = NULL;
+    parser->previous_token = NULL;
+    parser->error = NULL;
+}
+
+void parser_free(Parser *parser)
+{
+    machine_free(&(parser->machine));
+    contextualizer_free(&(parser->contextualizer));
+    tokenizer_free(&(parser->tokenizer));
+    stack_free(&(parser->stack));
+
+    if (parser->error != NULL)
+    {
+        free(parser->error);
+    }
+
+    free(parser);
+
+    parser = NULL;
+}
+
 bool is_terminal(int x)
 {
     return x < FIRST_NON_TERMINAL;
@@ -41,7 +70,7 @@ bool push_production(Parser *parser, int topStack, int tokenInput)
         {
             if (production[i] != 0 || i == 0)
             {
-                push(&(parser->stack), production[i]);
+                stack_push(&(parser->stack), production[i]);
             }
         }
         return true;
@@ -65,7 +94,7 @@ bool step(Parser *parser)
         parser->current_token = token_create(DOLLAR, "$", position);
     }
 
-    int x = pop(&(parser->stack));
+    int x = stack_pop(&(parser->stack));
     int a = parser->current_token->type;
 
     if (x == EPSILON)
@@ -92,6 +121,9 @@ bool step(Parser *parser)
         }
         else
         {
+            int length = snprintf(NULL, 0, "Erro na posição %d: %s.", parser->current_token->position, PARSER_ERROR[x]) + 1;
+            parser->error = (char *)malloc(length * sizeof(char));
+
             sprintf(parser->error, "Erro na posição %d: %s.", parser->current_token->position, PARSER_ERROR[x]);
             return true;
         }
@@ -104,7 +136,10 @@ bool step(Parser *parser)
         }
         else
         {
-            strcpy(parser->error, PARSER_ERROR[x]);
+            int length = snprintf(NULL, 0, "Erro na posição %d: %s.", parser->current_token->position, PARSER_ERROR[x]) + 1;
+            parser->error = (char *)malloc(length * sizeof(char));
+
+            sprintf(parser->error, "Erro na posição %d: %s.", parser->current_token->position, PARSER_ERROR[x]);
             return true;
         }
     }
@@ -115,42 +150,14 @@ bool step(Parser *parser)
     }
 }
 
-void parser_init(Parser *parser)
-{
-    tokenizer_init(&(parser->tokenizer));
-    contextualizer_init(&(parser->contextualizer));
-    stack_init(&(parser->stack));
-    machine_init(&(parser->machine));
-
-    parser->error = (char *)malloc(192 * sizeof(char));
-
-    strcpy(parser->error, "");
-
-    parser->current_token = NULL;
-    parser->previous_token = NULL;
-}
-
-void parser_free(Parser *parser)
-{
-    machine_free(&(parser->machine));
-    contextualizer_free(&(parser->contextualizer));
-    tokenizer_free(&(parser->tokenizer));
-    stack_free(&(parser->stack));
-    free(parser->error);
-    free(parser);
-
-    parser->error = NULL;
-    parser = NULL;
-}
-
 HttpResponse *parse(Parser *parser, char *code, int timer, double delay, int mode)
 {
     set_input(&(parser->tokenizer), code);
     set_timer(&(parser->machine), timer);
     set_delay(&(parser->machine), delay);
 
-    push(&(parser->stack), DOLLAR);
-    push(&(parser->stack), START_SYMBOL);
+    stack_push(&(parser->stack), DOLLAR);
+    stack_push(&(parser->stack), START_SYMBOL);
 
     parser->current_token = get_next_token(&(parser->tokenizer));
 
@@ -158,23 +165,23 @@ HttpResponse *parse(Parser *parser, char *code, int timer, double delay, int mod
 
     while (!step(parser))
     {
-        if (strlen(parser->tokenizer.error) != 0 ||
-            strlen(parser->contextualizer.error) != 0 ||
-            strlen(parser->error) != 0)
+        if (parser->tokenizer.error != NULL ||
+            parser->contextualizer.error != NULL ||
+            parser->error != NULL)
         {
             break;
         };
     }
 
-    if (strlen(parser->tokenizer.error) != 0)
+    if (parser->tokenizer.error != NULL)
     {
         return httpResponse_create(parser->tokenizer.error, 400, "Bad Request");
     }
-    if (strlen(parser->error) != 0)
+    if (parser->error != NULL)
     {
         return httpResponse_create(parser->error, 400, "Bad Request");
     }
-    if (strlen(parser->contextualizer.error) != 0)
+    if (parser->contextualizer.error != NULL)
     {
         return httpResponse_create(parser->contextualizer.error, 400, "Bad Request");
     }

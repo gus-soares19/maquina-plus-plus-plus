@@ -10,7 +10,7 @@ typedef struct
 Token *token_create(int type, char *lexeme, int start)
 {
     Token *token = (Token *)malloc(sizeof(Token));
-    token->lexeme = (char *)malloc(16 * sizeof(char));
+    token->lexeme = (char *)malloc((strlen(lexeme) + 1) * sizeof(char));
 
     strcpy(token->lexeme, lexeme);
     token->type = type;

@@ -36,7 +36,7 @@ void hashMap_free(HashMap *hashMap)
 void hashMap_put(HashMap *hashMap, const char *key, int value)
 {
     HashMapNode *new_hashMapNode = (HashMapNode *)malloc(sizeof(HashMapNode));
-    new_hashMapNode->key = (char *)malloc(16 * sizeof(char));
+    new_hashMapNode->key = (char *)malloc((strlen(key) + 1) * sizeof(char));
 
     strcpy(new_hashMapNode->key, key);
     new_hashMapNode->value = value;
