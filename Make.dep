@@ -68,7 +68,7 @@ server.c.home.gustavo.nuttxspace.apps.examples.m3p.o: server.c \
  /home/gustavo/nuttxspace/nuttx/include/endian.h \
  /home/gustavo/nuttxspace/nuttx/include/sys/endian.h httpResponse.c \
  parser.c constants.h parserConstants.h token.c stack.c tokenizer.c \
- tokenizerConstants.h contextualizer.c contextualizerConstants.h \
+ tokenizerConstants.h list.c contextualizer.c contextualizerConstants.h \
  hashMap.c hashMapList.c machine.c
 # No files specified for dependency generation
 # No files specified for dependency generation

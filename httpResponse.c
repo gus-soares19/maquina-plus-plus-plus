@@ -31,7 +31,14 @@ void httpResponse_free(HttpResponse *httpResponse)
 
 char *httpResponse_to_string(HttpResponse *httpResponse)
 {
-    int length = strlen(httpResponse->type) + strlen(httpResponse->message) + 3 + 184;
+    int length = snprintf(NULL, 0, "HTTP/1.1 %d %s\r\n"
+                                   "Content-Type: text/plain\r\n"
+                                   "Access-Control-Allow-Origin: *\r\n"
+                                   "Access-Control-Allow-Methods: GET, POST\r\n"
+                                   "Access-Control-Allow-Headers: Content-Type\r\n"
+                                   "Content-Length: %d\r\n\r\n%s",
+                          httpResponse->code, httpResponse->type, strlen(httpResponse->message), httpResponse->message) + 1;
+
     char *response = (char *)malloc(length * sizeof(char));
 
     sprintf(response,

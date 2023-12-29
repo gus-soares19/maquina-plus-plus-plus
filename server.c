@@ -22,17 +22,23 @@ static const char *ip;
 
 bool connect_wifi(void)
 {
-    char buffer[100];
     char *psk_command = "wapi psk wlan0";
     char *essid_command = "wapi essid wlan0";
+    int length;
 
     printf("tentando conectar na internet...\n");
+
+    // monta e envia o comando com a senha
+    length = snprintf(NULL, 0, "%s \"%s\" %d", psk_command, CONFIG_EXAMPLES_M3P_WIFI_PSK, 1) + 1;
+    char *buffer = (char *)malloc(length * sizeof(char));
 
     sprintf(buffer, "%s \"%s\" %d", psk_command, CONFIG_EXAMPLES_M3P_WIFI_PSK, 1);
     printf("%s\n", buffer);
     system(buffer);
 
-    strcpy(buffer, "");
+    // monta e envia o comando com o nome da rede
+    length = snprintf(NULL, 0, "%s \"%s\" %d", essid_command, CONFIG_EXAMPLES_M3P_WIFI_ESSID, 1) + 1;
+    buffer = (char *)realloc(buffer, length * sizeof(char));
 
     sprintf(buffer, "%s \"%s\" %d", essid_command, CONFIG_EXAMPLES_M3P_WIFI_ESSID, 1);
     printf("%s\n", buffer);
@@ -42,6 +48,7 @@ bool connect_wifi(void)
         return false;
     }
 
+    // conclui e obtem um IP
     printf("renew wlan0\n");
     if (system("renew wlan0") != 0)
     {
@@ -49,6 +56,7 @@ bool connect_wifi(void)
         return false;
     }
 
+    // exibe o IP recebido
     printf("ifconfig\n");
     if (system("ifconfig") != 0)
     {

@@ -73,14 +73,14 @@ void execute_action(Contextualizer *contextualizer, int action, Token *token)
         int bufferSize = sizeof(contextualizer->labels_buffer.list) / sizeof(contextualizer->labels_buffer.list[0]);
         for (size_t i = 0; i < bufferSize; i++)
         {
-            List *bufferList = contextualizer->labels_buffer.list[i];
+            KeyList *bufferList = contextualizer->labels_buffer.list[i];
 
             if (bufferList != NULL)
             {
                 if (hashMap_get(&(contextualizer->labels), bufferList->key) != -1)
                 {
                     int command = hashMap_get(&(contextualizer->labels), bufferList->key) - 3;
-                    List *list = get_list(&(contextualizer->labels_buffer), bufferList->key);
+                    KeyList *list = get_list(&(contextualizer->labels_buffer), bufferList->key);
 
                     if (list != NULL)
                     {
@@ -95,10 +95,10 @@ void execute_action(Contextualizer *contextualizer, int action, Token *token)
                 }
                 else
                 {
-                    int length = snprintf(NULL, 0, "Erro na posição %d: label '%s' não existe.", token->position, bufferList->key) + 1;
+                    int length = snprintf(NULL, 0, "Erro: label '%s' não existe.", bufferList->key) + 1;
                     contextualizer->error = (char *)malloc(length * sizeof(char));
 
-                    sprintf(contextualizer->error, "Erro na posição %d: label '%s' não existe.", token->position, bufferList->key);
+                    sprintf(contextualizer->error, "Erro: label '%s' não existe.", bufferList->key);
                 }
             }
         }
@@ -295,10 +295,10 @@ void execute_action(Contextualizer *contextualizer, int action, Token *token)
         }
         else
         {
-            int length = snprintf(NULL, 0, "Erro na posição %d: label '%s' duplicada.", token->position, label) + 1;
+            int length = snprintf(NULL, 0, "Erro: label '%s' duplicada.", label) + 1;
             contextualizer->error = (char *)malloc(length * sizeof(char));
 
-            sprintf(contextualizer->error, "Erro na posição %d: label '%s' duplicada.", token->position, label);
+            sprintf(contextualizer->error, "Erro: label '%s' duplicada.", label);
         }
         free(label);
         break;

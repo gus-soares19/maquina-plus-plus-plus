@@ -21,6 +21,7 @@ typedef struct
     Stack call_stack;
     Stack data_stack;
     TokenNode *tokenNode_head;
+    List memory;
     int registers[REGISTERS];
     bool flag_c;
     bool flag_z;
@@ -39,6 +40,7 @@ void machine_init(Machine *machine)
 
     stack_init(&(machine->call_stack));
     stack_init(&(machine->data_stack));
+    list_init(MAX_INT, &(machine->memory));
 
     machine->tokens = 0;
     machine->tokenNode_head = NULL;
@@ -66,6 +68,7 @@ void machine_free(Machine *machine)
     stack_free(&(machine->call_stack));
     stack_free(&(machine->data_stack));
     tokenNodes_free(machine->tokenNode_head);
+    list_free(&(machine->memory));
 
     if (machine->message != NULL)
     {
@@ -451,16 +454,17 @@ void mov_output(TokenNode *tokenNode1, TokenNode *tokenNode2, Machine *machine)
 {
     int output_addr;
     char *command = "i2c set -b";
-    char buffer[100];
 
     sscanf(tokenNode2->token->lexeme, "OUT%d", &output_addr);   // obtem o endereço da porta OUTPUT
     int register_from = tokenNode1->token->lexeme[0] - A_ASCII; // obtem a posição do registrador de destino no vetor
 
-    sprintf(buffer, "%s %d -a 0x%d 0x%X", command, CONFIG_EXAMPLES_M3P_I2C_BUS, (MIN_OUT_ADDR + output_addr), machine->registers[register_from]); // monta o comando para ler a porta i2c correspondente
+    int length = snprintf(NULL, 0, "%s %d -a 0x%d 0x%X", command, CONFIG_EXAMPLES_M3P_I2C_BUS, (MIN_OUT_ADDR + output_addr), machine->registers[register_from]) + 1;
+    char *buffer = (char *)malloc(length * sizeof(char));
 
-    if (system(buffer) != 0) // envia o comando para o NuttX
+    sprintf(buffer, "%s %d -a 0x%d 0x%X", command, CONFIG_EXAMPLES_M3P_I2C_BUS, (MIN_OUT_ADDR + output_addr), machine->registers[register_from]); // monta o comando para ler a porta i2c correspondente
+    if (system(buffer) != 0)                                                                                                                      // envia o comando para o NuttX
     {
-        printf("Não foi possível ler a porta OUT%d.\n", output_addr);
+        set_machine_response("Não foi possível escrever na porta OUTPUT.", machine);
     }
 }
 
@@ -469,17 +473,20 @@ void mov_input(TokenNode *tokenNode1, TokenNode *tokenNode2, Machine *machine)
     int input_addr, value;
     FILE *file;
     char *command = "i2c get -b 0 -a";
-    char buffer[100], response[100];
+    char response[100];
 
     sscanf(tokenNode1->token->lexeme, "IN%d", &input_addr);   // obtem o endereço da porta INPUT
     int register_to = tokenNode2->token->lexeme[0] - A_ASCII; // obtem a posição do registrador de destino no vetor
+
+    int length = snprintf(NULL, 0, "%s 0x%d", command, (MIN_IN_ADDR + input_addr)) + 1;
+    char *buffer = (char *)malloc(length * sizeof(char));
 
     sprintf(buffer, "%s 0x%d", command, (MIN_IN_ADDR + input_addr)); // monta o comando para ler a porta i2c correspondente
 
     file = popen(buffer, "r");
     if (file == NULL)
     {
-        printf("Não foi possível ler a porta IN%d.\n", input_addr);
+        set_machine_response("Não foi possível ler a porta INPUT.", machine);
     }
     else
     {
@@ -807,7 +814,7 @@ HttpResponse *execute(Machine *machine)
         }
 
         delay(machine);
-        current = get_next_valid_token(current, machine); // retorna o próximo token        
+        current = get_next_valid_token(current, machine); // retorna o próximo token
     }
 
     if (machine->message != NULL)

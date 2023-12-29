@@ -121,10 +121,13 @@ bool step(Parser *parser)
         }
         else
         {
-            int length = snprintf(NULL, 0, "Erro na posição %d: %s.", parser->current_token->position, PARSER_ERROR[x]) + 1;
+            int line = get_line_by_position(parser->previous_token->position, &(parser->tokenizer)); // obtem a linha do token
+
+            // monta a mensagem de erro
+            int length = snprintf(NULL, 0, "Erro na linha %d: %s.", line, PARSER_ERROR[x]) + 1;
             parser->error = (char *)malloc(length * sizeof(char));
 
-            sprintf(parser->error, "Erro na posição %d: %s.", parser->current_token->position, PARSER_ERROR[x]);
+            sprintf(parser->error, "Erro na linha %d: %s.", line, PARSER_ERROR[x]);
             return true;
         }
     }
@@ -136,10 +139,13 @@ bool step(Parser *parser)
         }
         else
         {
-            int length = snprintf(NULL, 0, "Erro na posição %d: %s.", parser->current_token->position, PARSER_ERROR[x]) + 1;
+            int line = get_line_by_position(parser->previous_token->position, &(parser->tokenizer)); // obtem a linha do token
+
+            // monta a mensagem de erro
+            int length = snprintf(NULL, 0, "Erro na linha %d: %s.", line, PARSER_ERROR[x]) + 1;
             parser->error = (char *)malloc(length * sizeof(char));
 
-            sprintf(parser->error, "Erro na posição %d: %s.", parser->current_token->position, PARSER_ERROR[x]);
+            sprintf(parser->error, "Erro na linha %d: %s.", line, PARSER_ERROR[x]);
             return true;
         }
     }
@@ -153,6 +159,8 @@ bool step(Parser *parser)
 HttpResponse *parse(Parser *parser, char *code, int timer, double delay, int mode)
 {
     set_input(&(parser->tokenizer), code);
+    set_lines_length(&(parser->tokenizer));
+
     set_timer(&(parser->machine), timer);
     set_delay(&(parser->machine), delay);
 
