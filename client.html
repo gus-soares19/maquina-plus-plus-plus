@@ -3,120 +3,144 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+    <meta content="text/html; charset=utf-8">
     <title>M+++</title>
     <style>
-        #titulo {
-            display: flex;
-            justify-content: center;
+        body {
+            font-family: sans-serif;
         }
 
-        #params {
-            display: flex;
+        #title {
+            text-align: center;
         }
 
-        .params,
-        .timer, .delay, .acao {
-            margin: 5px 5px;
+        #input-area {
+            height: calc(100vh - 90px);
+            display: flex;
+            justify-content: space-between;
+            font-size: 16px;
         }
 
-        .acao{
+        #code-area,
+        #params-area {
             display: flex;
+            flex-direction: column;
+        }
+
+        #code-area {
+            width: 60%;
+        }
+
+        #params-area {
+            width: 38%;
         }
 
         textarea {
-            width: 100%;
-            height: 500px;
-            font-size: 16px;
+            height: 100%;
             resize: none;
+            padding: 15px;
+            font-size: 16px;
+        }
+
+        #message-area {
+            margin: 20px 10px;
+            text-align: center;
         }
     </style>
 </head>
 
 <body>
-    <div id="titulo">
-        <h1>Escreva um código no assembly da M+++ para ser interpretado</h1>
+    <div id="title">
+        <h1>M+++</h1>
     </div>
-    <div id="input">
-        <div id="codigo-area">
-            <textarea type="text" id="codigo" name="codigo"></textarea>
-            <div id="params">
-                <div class="timer">
-                    <label>Tempo máximo de execução (ss)</label>
-                    <input type="number" value="60" min="10" max="1200" id="timer">
-                </div>
-                <div class="delay">
-                    <label>Intervalo entre instruções (ss)</label>
-                    <input type="number" value="0" min="0" max="1" id="delay">
-                </div>
-                <div class="acao">
-                    <label>Selecione uma ação:</label>
-                    <div>
-                        <input type="radio" name="acao" id="interpretar" value="1" checked />
-                        <label for="huey">Interpretar</label>
-                    </div>
-
-                    <div>
-                        <input type="radio" name="acao" id="compilar" value="0" />
-                        <label for="dewey">Compilar</label>
-                    </div>
-                </div>
+    <div id="input-area">
+        <div id="code-area">
+            <textarea rows="number" type="text" id="code" name="code"
+                placeholder="LOOP:&#10;MOV 05,A;&#10;MOV A,OUT0;&#10;MOV 09,A;&#10;MOV A,OUT0;&#10;JMP LOOP;"></textarea>
+        </div>
+        <div id="params-area">
+            <div>
+                <label>Tempo máximo de interpretação (ss):</label>
+                <input type="number" value="20" min="10" max="1200" step="5" id="timer">
             </div>
-            <button id="botao">Enviar</button>
+            <div>
+                <label>Intervalo entre instruções (ss):</label>
+                <input type="number" value="0" min="0" max="1" step="0.1" id="delay">
+            </div>
+            <div>
+                <label>Ação do microcontrolador:</label>
+                <input type="radio" name="action" id="i" value="1" checked />
+                <label class="radio-label" for="i"></label>
+                <span class="radio-text">Interpretar</span>
+                <input type="radio" name="action" id="c" value="0" />
+                <label class="radio-label" for="c"></label>
+                <span class="radio-text">Compilar</span>
+            </div>
+            <div id="send-area">
+                <button id="send-button">Enviar</button>
+            </div>
+            <div id="message-area">
+                <p id="message"></p>
+            </div>
         </div>
     </div>
     <script>
-        function timerValido() {
+        function valid_params() {
             let timer = document.getElementById("timer").value;
             let delay = document.getElementById("delay").value;
-            return (timer >= 10 && timer <= 1200) && (delay >= 0 && delay <= 1);
+            return (timer != "" && (timer >= 10 && timer <= 1200)) && (delay != "" && (delay >= 0 && delay <= 1));
         }
-        function codigoValido() {
-            return document.getElementById("codigo").value.trim().length > 0
+        function valid_code() {
+            return document.getElementById("code").value.trim().length > 0
         }
-        function ajustarCodigo() {
+        function get_adjusted_code() {
             const allowedChars = "0123456789ABCDEFGHIJKLMNOPQRSTUVXWYZ#;,: \n";
-            let codigo = document.getElementById("codigo").value.toUpperCase();
-            codigo = codigo.replace(/\/\/.*/g, '').trim().split('').filter(char => allowedChars.includes(char)).join('');
-            return codigo.toUpperCase();
+            let code = document.getElementById("code").value.toUpperCase();
+            code = code.replace(/\/\/.*/g, '').trim().split('').filter(char => allowedChars.includes(char)).join('');
+            return code.toUpperCase();
         }
-
         document.addEventListener('DOMContentLoaded', function () {
-            document.getElementById('botao').addEventListener('click', function () {
-                var btn = document.getElementById('botao');
+            document.getElementById('send-button').addEventListener('click', function () {
                 try {
-                    if (!timerValido() || !codigoValido()) {
-                        alert("Verifique se todos os campos estão preenchidos de acordo.");
+                    if (!valid_code() || !valid_params()) {
+                        show_message("Verifique se todos os campos estão devidamente preenchidos.", true);
+                        return;
                     }
-                    else {
-                        btn.setAttribute('disabled', '');
-                        const url = "http://SERVER_IP_AD:8080";
-                        var data = {
-                            code: ajustarCodigo(),
-                            timer: document.getElementById("timer").value,
-                            delay: document.getElementById("delay").value,
-                            mode: document.querySelector('input[name="acao"]:checked').value
-                        };
-                        fetch(url, {
-                            method: "POST",
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify(data)
-                        }).then(response => response.text())
-                            .then(data => {
-                                alert(`${data}`);
-                            })
-                            .catch(error => {
-                                alert(`Erro: ${error}`);
-                            });
-                    }
+                    const url = "http://SERVER_IP_AD:8080";
+                    var data = {
+                        code: get_adjusted_code(),
+                        timer: document.getElementById("timer").value,
+                        delay: document.getElementById("delay").value,
+                        mode: document.querySelector('input[name="action"]:checked').value
+                    };
+                    show_message("Aguardando retorno...", false);
+                    fetch(url, {
+                        method: "POST",
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data)
+                    })
+                        .then(response => response.text())
+                        .then(data => {
+                            show_message(data, true);
+                        })
+                        .catch(error => {
+                            show_message("Não foi possível concluir a requisição.", true);
+                        });
+
                 } catch (error) {
-                    alert(`Erro: ${error.message}`);
+                    show_message(`${error}.`, true);
                 }
-                btn.removeAttribute('disabled', '');
             });
         });
+        function show_message(message, cursor) {
+            var message_field = document.getElementById("message");
+            var send_button = document.getElementById("send-button");
+
+            send_button.style.cursor = cursor ? "pointer" : "not-allowed";
+            message_field.innerText = message;
+        }
     </script>
 </body>
 
