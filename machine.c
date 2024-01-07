@@ -508,6 +508,48 @@ void mov_input(TokenNode *tokenNode1, TokenNode *tokenNode2, Machine *machine)
     }
 }
 
+void mov_memory_by_hex(TokenNode *tokenNode1, TokenNode *tokenNode2, Machine *machine)
+{
+    int register_from = 0, number = 0, memory_addr = 0;
+    unsigned int hex;
+
+    if ((tokenNode1->token->type >= REGISTER_A && tokenNode1->token->type <= REGISTER_E)) // MOV REG,#HEX
+    {
+        register_from = tokenNode1->token->lexeme[0] - A_ASCII; // obtem a posição do registrador de origem no vetor
+        number = machine->registers[register_from];             // obtem o valor do registrador de origem
+    }
+    else // MOV HEX,#HEX
+    {
+        number = strtol(tokenNode1->token->lexeme, NULL, 16); // obtem o valor decimal através do hex fornecido
+    }
+
+    sscanf(tokenNode2->token->lexeme, "#%X", &hex); // obtem o valor hexadecimal do endereço da memória enviado no formato #HEX
+    memory_addr = (int)hex;                         // obtem o endereço através do hex fornecido
+
+    add_number_at(number, memory_addr, &(machine->memory)); // adiciona o valor no endereço da memória
+}
+
+void mov_memory_by_register(TokenNode *tokenNode1, TokenNode *tokenNode2, Machine *machine)
+{
+    int register_from = 0, register_to = 0, number = 0, memory_addr = 0;
+
+    if ((tokenNode1->token->type >= REGISTER_A && tokenNode1->token->type <= REGISTER_E)) // MOV REG,#REG
+    {
+        register_from = tokenNode1->token->lexeme[0] - A_ASCII; // obtem a posição do registrador de origem no vetor
+        number = machine->registers[register_from];             // obtem o valor do registrador de origem
+    }
+    else // MOV HEX,#REG
+    {
+        number = strtol(tokenNode1->token->lexeme, NULL, 16); // obtem o valor decimal através do hex fornecido
+    }
+
+    tokenNode2 = get_next_valid_token(tokenNode2, machine); // avança para o registrador de destino
+    register_to = tokenNode2->token->lexeme[0] - A_ASCII;   // obtem a posição do registrador de destino no vetor
+    memory_addr = machine->registers[register_to];          // obtem o valor do endereço da memória
+
+    add_number_at(number, memory_addr, &(machine->memory)); // adiciona o valor no endereço da memória
+}
+
 void mov(TokenNode *tokenNode1, TokenNode *tokenNode2, Machine *machine)
 {
     if (tokenNode1 == NULL || tokenNode2 == NULL) // validação para garantir funcionamento
@@ -516,7 +558,8 @@ void mov(TokenNode *tokenNode1, TokenNode *tokenNode2, Machine *machine)
         return;
     }
 
-    int number = 0;
+    int register_from = 0, number = 0, memory_addr = 0;
+    unsigned int hex;
 
     if (tokenNode1->token->type == INPUT_PORT && (tokenNode2->token->type >= REGISTER_A && tokenNode2->token->type <= REGISTER_E)) // MOV INPUT,REG
     {
@@ -530,15 +573,42 @@ void mov(TokenNode *tokenNode1, TokenNode *tokenNode2, Machine *machine)
         return;
     }
 
-    if (tokenNode1->token->type == HEXADECIMAL && (tokenNode2->token->type >= REGISTER_A && tokenNode2->token->type <= REGISTER_E)) // MOV HEX,REG
+    if ((tokenNode1->token->type == HEXADECIMAL || (tokenNode1->token->type >= REGISTER_A && tokenNode1->token->type <= REGISTER_E)) && tokenNode2->token->type == RAM) // MOV HEX,#HEX || MOV REG,#HEX
+    {
+        mov_memory_by_hex(tokenNode1, tokenNode2, machine);
+        return;
+    }
+
+    if ((tokenNode1->token->type == HEXADECIMAL || (tokenNode1->token->type >= REGISTER_A && tokenNode1->token->type <= REGISTER_E)) && tokenNode2->token->type == DRAM) // MOV HEX,#REG || MOV REG,#REG
+    {
+        mov_memory_by_register(tokenNode1, tokenNode2, machine);
+        return;
+    }
+
+    if (tokenNode1->token->type == RAM && (tokenNode2->token->type >= REGISTER_A && tokenNode2->token->type <= REGISTER_E)) // MOV #HEX, REG
+    {
+        sscanf(tokenNode1->token->lexeme, "#%X", &hex);          // obtem o valor hexadecimal enviado no formato #HEX
+        memory_addr = (int)hex;                                  // converte o valor para inteiro
+        number = get_number_at(memory_addr, &(machine->memory)); // atribui o valor que estiver no endereço da memória fornecido
+    }
+    else if (tokenNode1->token->type == DRAM && (tokenNode2->token->type >= REGISTER_A && tokenNode2->token->type <= REGISTER_E)) // MOV #REG, REG
+    {
+        tokenNode1 = tokenNode2;                                // resgata o registrador de origem (#REG)
+        tokenNode2 = get_next_valid_token(tokenNode2, machine); // avança para o registrador de destino
+
+        register_from = tokenNode1->token->lexeme[0] - A_ASCII;  // obtem a posição do registrador de origem no vetor
+        memory_addr = machine->registers[register_from];         // obtem o valor do registrador de origem
+        number = get_number_at(memory_addr, &(machine->memory)); // obtem o valor que estiver no endereço da memória com valor igual ao do registrador de origem
+    }
+    else if (tokenNode1->token->type == HEXADECIMAL && (tokenNode2->token->type >= REGISTER_A && tokenNode2->token->type <= REGISTER_E)) // MOV HEX,REG
     {
         number = strtol(tokenNode1->token->lexeme, NULL, 16); // obtem o valor decimal através do hex fornecido
     }
     else if ((tokenNode1->token->type >= REGISTER_A && tokenNode1->token->type <= REGISTER_E) &&
              (tokenNode2->token->type >= REGISTER_A && tokenNode2->token->type <= REGISTER_E)) // MOV REG,REG
     {
-        int register_from = tokenNode1->token->lexeme[0] - A_ASCII; // obtem a posição do registrador de origem no vetor
-        number = machine->registers[register_from];                 // obtem o valor no registrador de origem
+        register_from = tokenNode1->token->lexeme[0] - A_ASCII; // obtem a posição do registrador de origem no vetor
+        number = machine->registers[register_from];             // obtem o valor no registrador de origem
     }
     else // sintaxe incorreta
     {
@@ -782,12 +852,6 @@ HttpResponse *execute(Machine *machine)
             {
                 set_machine_response("NullPointerException: Nenhum token encontrado para interpretar.", machine);
                 break;
-            }
-
-            if (current->token->type != LABEL_ID && current->token->type != LABEL &&
-                current->token->type != SEMICOLON && current->token->type != COMA)
-            {
-                set_machine_response("InvalidArgumentException: Token não mapeado.", machine);
             }
             break;
         }

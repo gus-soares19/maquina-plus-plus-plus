@@ -9,7 +9,7 @@ typedef struct
 void list_init(size_t length, List *list)
 {
     list->data = (int *)malloc(length * sizeof(int));
-    list->length = 0;
+    list->length = length;
 }
 
 void list_free(List *list)
