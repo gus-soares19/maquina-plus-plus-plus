@@ -29,7 +29,7 @@ A interface possui 4 parâmetros importantes para a aplicação:
 3. campo numérico para informar o intervalo entre cada instrução também em segundos;
 4. grupo de checkbox para alternar entre compilação e interpretação do código assembly.
 
-O parâmetro 2 serve para evitar que códigos cíclicos executem indefinidamente, impossibilitando novas execuções. Já o o parâmetro 3 serve para aumentar o tempo entre uma instrução e outra, permitindo visualizar o valor dos LEDs do hardware com facilidade. Além disso, é possível compilar código enquanto outro é interpretado, mas não é possível interpretar dois ao mesmo tempo.
+O parâmetro 2 serve para evitar que códigos cíclicos executem indefinidamente, impossibilitando novas execuções. Já o parâmetro 3 serve para aumentar o tempo entre uma instrução e outra, permitindo visualizar o valor dos LEDs do hardware com facilidade. Além disso, é possível compilar código enquanto outro é interpretado, mas não é possível interpretar dois ao mesmo tempo.
 
 <img src="imagens\interface.png" style="display: block; margin: auto; width:90%;">
 
