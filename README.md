@@ -8,7 +8,7 @@ Maquina+++ (Machine+++/M3+) é um projeto da Universidade Regional de Blumenau (
 ___
 ## Objetivo desse projeto
 
-Esse projeto tem como objetivo criar uma versão da M3+ portável para o sistema operacional NuttX rodando em um ESP32 e, para isso, foi implementada em C no modelo de aplicação cliente-servidor. A interface web serve como meio de comunicação entre o cliente (usuário) com o restante da aplicação, que é composta pelos analisadores léxico, sintático e semântico e um interpretador para que seja possível executar o assembly.
+Esse projeto tem como objetivo criar uma versão da M3+ portável para o sistema operacional NuttX rodando em um ESP32 e, para isso, foi implementada em C no modelo de aplicação cliente-servidor. A interface web serve como meio de comunicação entre o cliente (usuário) e o restante da aplicação, que é composta pelos analisadores léxico, sintático e semântico e um interpretador para que seja possível executar o assembly.
 
 ___
 ## Características da Aplicação
@@ -19,40 +19,42 @@ A aplicação foi separada em três partes: serviço web, analisador e interpret
 interface web e pelo servidor, que recebe as requisições vindas da interface e encaminha para o analisador. O analisador,
 responsável por analisar lexica, sintatica e semanticamente o código, poderá retornar para o servidor uma mensagem de erro caso encontre algum problema no código ou então irá enviar para o interpretador o assembly validado a fim de interpretá-lo, podendo se comunicar com o hardware ou retornar para o servidor uma mensagem de sucesso ou erro que será devolvida ao cliente, encerrando o fluxo.
 
-<img src="imagens\fluxograma.png">
+<img src="imagens\fluxograma.png" style="display: block; margin: auto; width:50%;">
 
 ### Interface web
 
 A interface possui 4 parâmetros importantes para a aplicação:
 1. campo de texto para inserção de código assembly;
-2. campos de texto enumerados de IN0 até IN3 representando as portas INPUT da M3+;
-3. campo numérico para informar o tempo máximo de execução da aplicação em segundos;
-4. campo numérico para informar o intervalo entre cada instrução também em segundos.
+2. campo numérico para informar o tempo máximo de execução da aplicação em segundos;
+3. campo numérico para informar o intervalo entre cada instrução também em segundos;
+4. grupo de checkbox para alternar entre compilação e interpretação do código assembly.
 
-O parâmetro 3 serve para evitar que códigos cíclicos executem indefinidamente, impossibilitando novas execuções. Já o o parâmetro 4 serve para aumentar o tempo entre uma instrução e outra, permitindo visualizar o valor dos LEDs do hardware com facilidade.
+O parâmetro 2 serve para evitar que códigos cíclicos executem indefinidamente, impossibilitando novas execuções. Já o o parâmetro 3 serve para aumentar o tempo entre uma instrução e outra, permitindo visualizar o valor dos LEDs do hardware com facilidade. Além disso, é possível compilar código enquanto outro é interpretado, mas não é possível interpretar dois ao mesmo tempo.
 
-<img src="imagens\interface.png">
+<img src="imagens\interface.png" style="display: block; margin: auto; width:90%;">
 
 ### Hardware
 
-O sistema embarcado construído para o projeto foi baseado na estrutura da M+++ e possui as seguintes
-características:
+O sistema embarcado construído para o projeto foi baseado na estrutura da M+++ e possui os seguintes
+componentes:
 * 1 ESP32-WROOM-32;
-* 4 PCF8574P;
-* 1 protoboard;
-* 32 resistores CR12 – 1/8W – 330 Ohms;
-* 2 resistores CR12 – 1/8W – 10K Ohms;
-* 32 LEDs vermelhas;
-* jumpers macho-macho.
+* 1 capacitor eletrolítico 1UF/63V (105°C);
+* 1 MM74C922WMX;
+* 1 protoboard disposto conforme imagem abaixo;
+* 2 barras de pinos fêmea PCI 1X20 (Passo 2.54mm, 180°);
+* 2 resistores 4K7 Ohms (SMD 0805 1/8W, 5% Precisão);
+* 4 CD4511 (Decodificador para Display de 7 Segmentos);
+* 4 displays 7 Segmentos HS-3191AS Catodo (cor vermelha, 7.5X13mm);
+* 8 barras de pinos fêmea PCI 1x4 (Passo 2.54mm, 180°);
+* 8 PCFs 8574P;
+* 12 capacitores cerâmicos 100NF/50V (SMD 0805);
+* 12 soquetes estampados 16 Pinos;
+* 16 LEDs SMD 0805 (cor vermelha);
+* 16 resistores 220R Ohms (SMD 0805 1/8W, 5% Precisão);
+* 32 chaves Tácteis KFC-A06-3X6X2.5 - 2T 180G SMD;
+* 32 resistores 10K Ohms (SMD 0805 1/8W; 1% Precisão);
 
 <img src="imagens\hardware.png">
-
-O ESP32, contornado pelo quadrado vermelho, é o microcontrolador em que o NuttX está instalado e a aplicação
-é executada. Para se comunicar com os dispositivos I2C PCF8574P, as portas definidas como GPIO21 e GPIO22, SDA e
-SCL respectivamente, passam pelos resistores R1 e R2 de 10K Ohms para reduzir a corrente e então se conectam às portas
-15 e 14 de cada PCF8574P. O quadrado verde agrupa os dispositivos I2C, os pinos P0 até P7 estão conectados no lado
-positivo de cada LED, destacados no quadrado roxo, e o lado negativo se conecta ao GND do ESP32 por meio de resistores
-de 330 Ohms.
 
 ___
 ## Configuração do NuttX
