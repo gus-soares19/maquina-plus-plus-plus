@@ -45,14 +45,15 @@ componentes:
 * 2 resistores 4K7 Ohms (SMD 0805 1/8W, 5% Precisão);
 * 4 CD4511 (Decodificador para Display de 7 Segmentos);
 * 4 displays 7 Segmentos HS-3191AS Catodo (cor vermelha, 7.5X13mm);
-* 8 barras de pinos fêmea PCI 1x4 (Passo 2.54mm, 180°);
+* 8 barras de pinos fêmea PCI 1x5 (Passo 2.54mm, 180°);
 * 8 PCFs 8574P;
 * 12 capacitores cerâmicos 100NF/50V (SMD 0805);
 * 12 soquetes estampados 16 Pinos;
 * 16 LEDs SMD 0805 (cor vermelha);
 * 16 resistores 220R Ohms (SMD 0805 1/8W, 5% Precisão);
 * 32 chaves Tácteis KFC-A06-3X6X2.5 - 2T 180G SMD;
-* 32 resistores 10K Ohms (SMD 0805 1/8W; 1% Precisão);
+* 32 resistores 10K Ohms (SMD 0805 1/8W, 1% Precisão);
+* 32 resistores 470R Ohms (SMD 0805 1/8W, 5% Precisão);
 
 <img src="imagens\hardware.png">
 
