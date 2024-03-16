@@ -55,7 +55,13 @@ componentes:
 * 32 resistores 10K Ohms (SMD 0805 1/8W, 1% Precisão);
 * 32 resistores 470R Ohms (SMD 0805 1/8W, 5% Precisão);
 
+design do hardware:
 <img src="imagens\hardware.png">
+
+hardware constrúido:
+<img src="imagens\versao_final.jpg">
+
+A imagem acima mostra o resultado final alcançado: no lado esquerdo estão os displays atuando como as 4 portas de saída (OUTPUT), no lado direito as chaves dispostas em 4 grupos de 8 servindo como as portas de entrada (INPUT) e ao centro está o ESP32, onde o NuttX está rodando. As chaves estão configuradas da seguinte forma: as linhas com o número 0 são os valores de 0 a 8, sendo 0 a chave mais a direta, e as linhas com o número 4 são os valores de 16 a 128, sendo 16 a chave mais a direita. Na pate superior da placa estão as portas 0 (IN0 e OUT0), logo abaixo as portas 1 (IN1 e OUT1), descendo até as portas 3.
 
 ___
 ## Configuração do NuttX
