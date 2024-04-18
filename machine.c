@@ -94,10 +94,10 @@ void set_machine_response(char *message, Machine *machine)
     sprintf(machine->message, message);
 }
 
-void delay(Machine *machine)
+void delay(double time)
 {
     clock_t start_time = clock();
-    clock_t delay = machine->delay * CLOCKS_PER_SEC;
+    clock_t delay = time * CLOCKS_PER_SEC;
     while (clock() < start_time + delay)
     {
     }
@@ -877,7 +877,7 @@ HttpResponse *execute(Machine *machine)
             break;
         }
 
-        delay(machine);
+        delay(machine->delay);
         current = get_next_valid_token(current, machine); // retorna o próximo token
     }
 
